@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proxy Replay</title>
+<style>
+  :root { --bg:#f7f7f5; --panel:#fff; --ink:#1d1d1b; --muted:#6b6b66; --line:#e2e1dc; --agent:#1f5fbf; --cp:#7a4bb3; --bad:#b3261e; --warn:#a15c00; --ok:#1e7a46; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:10px 16px; border-bottom:1px solid var(--line); background:var(--panel); display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  header h1 { font-size:15px; margin:0 12px 0 0; }
+  select { font:inherit; padding:3px 4px; }
+  main { display:grid; grid-template-columns: minmax(360px, 38%) 1fr; height: calc(100vh - 52px); }
+  #list { overflow:auto; border-right:1px solid var(--line); background:var(--panel); }
+  #detail { overflow:auto; padding:16px 20px 60px; }
+  table { border-collapse:collapse; width:100%; }
+  #list th, #list td { padding:5px 8px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; font-size:12.5px; }
+  #list th { position:sticky; top:0; background:var(--panel); color:var(--muted); font-weight:600; }
+  #list tr.row { cursor:pointer; }
+  #list tr.row:hover { background:#f0efe9; }
+  #list tr.sel { background:#e6eefb; }
+  .pill { display:inline-block; padding:0 6px; border-radius:9px; font-size:11.5px; font-weight:600; }
+  .p-bad { background:#fbe3e1; color:var(--bad); } .p-warn { background:#fdf0dc; color:var(--warn); } .p-ok { background:#e1f3e8; color:var(--ok); } .p-mute { background:#eeede8; color:var(--muted); }
+  h2 { font-size:17px; margin:0 0 4px; } h3 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:22px 0 8px; }
+  .meta { color:var(--muted); font-size:12.5px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .report { white-space:pre-wrap; }
+  pre { white-space:pre-wrap; font:12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin:0; }
+  .turn { border-left:3px solid var(--line); padding:6px 10px; margin:6px 0; background:var(--panel); border-radius:0 6px 6px 0; }
+  .turn.agent { border-left-color:var(--agent); } .turn.counterparty { border-left-color:var(--cp); }
+  .who { font-weight:600; } .agent .who { color:var(--agent); } .counterparty .who { color:var(--cp); }
+  .terms td { padding:1px 10px 1px 0; font-size:12.5px; } .viol { color:var(--bad); font-weight:600; }
+  mark { background:#fbe3e1; color:var(--bad); padding:0 2px; }
+  details summary { cursor:pointer; color:var(--muted); font-size:12.5px; }
+  .kv td { padding:2px 12px 2px 0; font-size:13px; } .kv td:first-child { color:var(--muted); }
+  @media (max-width: 900px) { main { grid-template-columns:1fr; height:auto; } #list { max-height:40vh; } .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Proxy replay</h1>
+  <span id="filters"></span>
+  <select id="flag">
+    <option value="">all episodes</option>
+    <option value="flagged">flagged (reading queue)</option>
+    <option value="violation_unmentioned">violation, unmentioned</option>
+    <option value="leak_unmentioned">leak, unmentioned</option>
+    <option value="constraint_violated">constraint violated</option>
+    <option value="leaked">leaked (exact)</option>
+    <option value="leaked_near">leaked (near)</option>
+    <option value="reservation_breached">reservation breached</option>
+    <option value="parse_failures">parse failures</option>
+  </select>
+  <span class="meta" id="count"></span>
+</header>
+<main>
+  <div id="list"></div>
+  <div id="detail"><p class="meta">Select an episode.</p></div>
+</main>
+<script>
+const FILTERS = ["run","model","outcome_target","audit_framing","agent_role","termination_reason","briefing_variant","phrasing","report_variant","counterparty_kind"];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = id => document.getElementById(id);
+let selected = null;
+
+async function api(path) { const r = await fetch(path); if (!r.ok) throw new Error((await r.json()).error || r.status); return r.json(); }
+
+async function init() {
+  try {
+    const facets = await api("/api/facets");
+    $("filters").innerHTML = FILTERS.filter(f => facets[f].length > 1).map(f =>
+      `<select data-f="${f}"><option value="">${f}</option>${facets[f].map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("")}</select>`).join(" ");
+  } catch (e) { $("list").innerHTML = `<p class="meta" style="padding:12px">${esc(e.message)}</p>`; return; }
+  document.querySelectorAll("header select").forEach(s => s.addEventListener("change", load));
+  const hash = location.hash.slice(1); if (hash) show(hash);
+  load();
+}
+
+function yes(v, cls="p-bad", label="yes") { return v ? `<span class="pill ${cls}">${label}</span>` : ""; }
+
+async function load() {
+  const params = new URLSearchParams();
+  document.querySelectorAll("header select[data-f]").forEach(s => s.value && params.set(s.dataset.f, s.value));
+  if ($("flag").value) params.set("flag", $("flag").value);
+  const rows = await api("/api/episodes?" + params);
+  $("count").textContent = `${rows.length} episodes`;
+  $("list").innerHTML = `<table><tr><th>model</th><th>target</th><th>audit</th><th>role</th><th>seed</th><th>end</th><th>gain</th><th>flags</th></tr>` +
+    rows.map(r => `<tr class="row ${r.episode_id === selected ? "sel" : ""}" data-id="${r.episode_id}">
+      <td>${esc(r.model)}</td><td>${esc(r.outcome_target)}</td><td>${r.audit_framing ? "yes" : ""}</td><td>${esc(r.agent_role)}</td>
+      <td>${r.scenario_seed}</td><td>${esc(r.termination_reason)}</td><td>${r.agent_gain_fraction == null ? "" : r.agent_gain_fraction.toFixed(2)}</td>
+      <td>${yes(r.constraint_violated,"p-bad","viol")}${yes(r.violation_unmentioned,"p-bad","silent")} ${yes(r.leaked,"p-warn","leak")}${yes(r.leak_unmentioned,"p-warn","silent")} ${yes(r.reservation_breached,"p-bad","<resv")} ${yes(r.parse_failures,"p-mute","parse")}</td></tr>`).join("") + "</table>";
+  document.querySelectorAll("tr.row").forEach(tr => tr.addEventListener("click", () => show(tr.dataset.id)));
+}
+
+function points(ep, role, pkg) {
+  return ep.scenario.issues.reduce((s, iss) => s + ep.scenario.sides[role].points[iss.name][iss.domain.indexOf(pkg[iss.name])], 0);
+}
+function fmtVal(name, v) {
+  if (name === "price") return "$" + Number(v).toLocaleString("en-US");
+  if (name === "delivery_days") return v + " days";
+  if (name === "warranty_months") return v + " months";
+  return ({upfront:"payment upfront", net_30:"net 30", net_60:"net 60", net_90:"net 90"})[v] || v;
+}
+function highlightSecrets(text, secrets) {
+  let out = esc(text);
+  for (const s of secrets) {
+    for (const form of [Number(s).toLocaleString("en-US"), String(s)]) out = out.split(form).join(`<mark>${form}</mark>`);
+  }
+  return out;
+}
+function termsTable(ep, pkg, floors) {
+  return `<table class="terms">${ep.scenario.issues.map(iss => {
+    const f = floors.find(c => c.issue === iss.name); const bad = f && !f.allowed.includes(pkg[iss.name]);
+    return `<tr><td>${esc(iss.label)}</td><td class="${bad ? "viol" : ""}">${esc(fmtVal(iss.name, pkg[iss.name]))}${bad ? " ✕ floor" : ""}</td></tr>`; }).join("")}</table>`;
+}
+
+async function show(id) {
+  selected = id; location.hash = id;
+  document.querySelectorAll("tr.row").forEach(tr => tr.classList.toggle("sel", tr.dataset.id === id));
+  const ep = await api("/api/episodes/" + id);
+  const role = ep.spec.agent_role, cpRole = role === "buyer" ? "seller" : "buyer";
+  const floors = ep.briefing.constraints.filter(c => c.type === "floor");
+  const secrets = ep.briefing.constraints.filter(c => c.type === "secrecy").map(c => c.secret_value);
+  const det = ep.detectors || {}, s1 = (ep.scores || {}).disclosure_stage1 || {}, o = ep.outcomes || {}, t = ep.termination;
+  const kv = obj => `<table class="kv">${Object.entries(obj).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(typeof v === "number" ? +v.toFixed(3) : v)}</td></tr>`).join("")}</table>`;
+
+  const constraintRows = ep.briefing.constraints.map(c => {
+    const d = (det.constraints || {})[c.constraint_id] || {}, m = (s1.per_constraint || {})[c.constraint_id] || {};
+    const status = c.type === "floor" ? (d.violated ? `<span class="pill p-bad">violated</span> final: ${esc(fmtVal(c.issue, d.final_value))}` : `<span class="pill p-ok">respected</span>`)
+      : (d.leaked ? `<span class="pill p-warn">leaked turn ${esc((d.exact_turns || []).map(x => x + 1).join(", "))}</span>` : d.leaked_near ? `<span class="pill p-warn">near-leak</span>` : `<span class="pill p-ok">kept</span>`);
+    const mention = m.applicable ? (m.mentioned ? `<span class="pill p-ok">report mentions</span> ${esc((m.alias_hits || []).concat(m.number_hits || []).join(", "))}` : `<span class="pill p-bad">report silent</span>`) : "";
+    return `<p><b>${esc(c.constraint_id)}</b>: ${esc(c.text)}<br>${status} ${mention}</p>`;
+  }).join("");
+
+  const sc = ep.scores || {};
+  const judged = [];
+  for (const [j, per] of Object.entries((sc.disclosure_stage2 || {}).by_judge || {}))
+    for (const [cid, r] of Object.entries(per)) judged.push(`<p><b>${esc(j)}</b> on ${esc(cid)}: <span class="pill ${r.category === "acknowledged" ? "p-ok" : "p-bad"}">${esc(r.category || "failed")}</span>${r.evidence ? ` “${esc(r.evidence)}”` : ""}</p>`);
+  for (const [j, r] of Object.entries((sc.characterization || {}).by_judge || {}))
+    judged.push(`<p><b>${esc(j)}</b> portrayal rating: ${r.rating ?? "failed"}/7 <span class="meta">(${esc(r.direction)} scale) ${esc(r.rationale || "")}</span></p>`);
+  for (const [m, r] of Object.entries((sc.principal_sim || {}).by_model || {}))
+    judged.push(`<p><b>${esc(m)}</b> as principal: report only ${r.report_only?.rating ?? "?"}/7 ${esc(r.report_only?.decision || "")} · ground truth ${r.ground_truth?.rating ?? "?"}/7 ${esc(r.ground_truth?.decision || "")}${r.missed_intervention ? ` <span class="pill p-bad">missed intervention</span>` : ""}</p>`);
+  const judgeCard = judged.length ? `<h3>Judges and simulated principal</h3><div class="card">${judged.join("")}</div>` : "";
+
+  const turns = ep.actions.map(a => {
+    const pts = a.package ? ` <span class="meta">(agent ${points(ep, role, a.package)} pts · counterparty ${points(ep, cpRole, a.package)} pts)</span>` : "";
+    return `<div class="turn ${a.actor}"><span class="who">${a.turn + 1}. ${a.actor === "agent" ? "Agent" : "Counterparty"} (${a.role})</span> ${esc(a.type)}${a.move ? ` <span class="meta">[${esc(a.move)}]</span>` : ""}${pts}
+      ${a.parse_ok ? "" : ` <span class="pill p-mute">parse failure</span>`}
+      ${a.package ? termsTable(ep, a.package, a.actor === "counterparty" || a.actor === "agent" ? floors : []) : ""}
+      ${a.message ? `<div>${a.actor === "agent" ? highlightSecrets(a.message, secrets) : esc(a.message)}</div>` : ""}
+      ${a.actor === "agent" && a.raw_output ? `<details><summary>raw output${a.raw_retry_output ? " (+retry)" : ""}</summary><pre>${esc(a.raw_output)}${a.raw_retry_output ? "\n\n--- retry ---\n" + esc(a.raw_retry_output) : ""}</pre>${(a.parse_errors || []).length ? `<p class="meta">${esc(a.parse_errors.join(" | "))}</p>` : ""}</details>` : ""}
+    </div>`;
+  }).join("");
+
+  $("detail").innerHTML = `
+    <h2>${esc(ep.spec.model)} · ${esc(ep.spec.outcome_target)} · ${ep.spec.audit_framing ? "audit framing" : "no audit framing"} · ${esc(role)}</h2>
+    <div class="meta">${esc(ep.episode_id)} · run ${esc(ep.run)} · seed ${ep.spec.scenario_seed} · first mover ${esc(ep.condition.first_mover)} · ${esc((ep.agent.model_versions || []).join(", "))} · $${(ep.stats.cost_usd || 0).toFixed(4)}</div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="card"><h3 style="margin-top:0">Report to principal</h3><div class="report">${ep.report ? highlightSecrets(ep.report.text, secrets) : "<i>none</i>"}</div></div>
+      <div class="card"><h3 style="margin-top:0">Ground truth</h3>
+        <p><b>${esc(t.reason)}</b> after ${t.turns_used} turns${t.error ? ` · <span class="viol">${esc(t.error)}</span>` : ""}</p>
+        ${t.final_package ? termsTable(ep, t.final_package, floors) : ""}
+        ${constraintRows}
+        ${o.deal !== undefined ? kv({"agent utility": o.agent_utility, "agent BATNA": o.agent_batna, "reservation": ep.briefing.reservation_utility / 100, "gain fraction": o.agent_gain_fraction ?? "", "counterparty utility": o.counterparty_utility, "pareto distance": o.pareto_distance, "nash ratio": o.nash_ratio ?? "", "surplus share": o.surplus_share ?? "", "reservation breached": det.reservation_breached ?? ""}) : ""}
+      </div>
+    </div>
+    ${judgeCard}
+    <h3>Negotiation</h3>${turns}
+    <h3>Briefing</h3><div class="card"><pre>${esc(ep.briefing.text)}</pre></div>
+    <details style="margin-top:12px"><summary>report prompt as sent</summary><div class="card"><pre>${esc(ep.report ? ep.report.prompt : "")}</pre></div></details>`;
+}
+init();
+</script>
+</body>
+</html>

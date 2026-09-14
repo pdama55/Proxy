@@ -1,0 +1,190 @@
+# Model registry. IDs verified against the OpenRouter catalog on 2026-09-13; verify direct-provider IDs
+# with `proxy models --ping` before any run, and re-verify before the confirmatory grid.
+#
+# Decoding: every model runs at its provider's default decoding and reasoning settings (params: {}),
+# recorded per episode. Temperature cannot be held constant across the ladder (Claude Opus 5 and
+# Sonnet 5 reject sampling parameters), so the comparison is "models as deployed by default".
+# Exception: the Qwen3.5 size ladder pins thinking on so size is the only thing varying within it.
+#
+# capability_rank orders models within a family (1 = least capable) for the H4 trend. The Qwen ladder is
+# ordered by total parameters; ordering by active parameters is an exploratory sensitivity check.
+#
+# Prices are USD per million tokens, used only for the spend ceiling.
+
+models:
+  # ---- Closed frontier arm: three labs x three tiers, via direct APIs (exact version strings) ----
+  claude-opus-5:
+    provider: anthropic
+    model: claude-opus-5
+    family: anthropic
+    tier: frontier
+    capability_rank: 3
+    price_in_per_mtok: 5.0
+    price_out_per_mtok: 25.0
+    openrouter_id: anthropic/claude-opus-5
+  claude-sonnet-5:
+    provider: anthropic
+    model: claude-sonnet-5
+    family: anthropic
+    tier: mid
+    capability_rank: 2
+    price_in_per_mtok: 2.0
+    price_out_per_mtok: 10.0
+    openrouter_id: anthropic/claude-sonnet-5
+  claude-haiku-4-5:
+    provider: anthropic
+    model: claude-haiku-4-5
+    family: anthropic
+    tier: small
+    capability_rank: 1
+    price_in_per_mtok: 1.0
+    price_out_per_mtok: 5.0
+    openrouter_id: anthropic/claude-haiku-4.5
+
+  gpt-6-astra:
+    provider: openai
+    model: gpt-6-astra
+    family: openai
+    tier: frontier
+    capability_rank: 3
+    price_in_per_mtok: 10.0
+    price_out_per_mtok: 50.0
+    openrouter_id: openai/gpt-6-astra
+  gpt-5.6-sol:
+    provider: openai
+    model: gpt-5.6-sol
+    family: openai
+    tier: mid
+    capability_rank: 2
+    price_in_per_mtok: 2.0
+    price_out_per_mtok: 10.0
+    openrouter_id: openai/gpt-5.6-sol
+  gpt-5.6-luna:
+    provider: openai
+    model: gpt-5.6-luna
+    family: openai
+    tier: small
+    capability_rank: 1
+    price_in_per_mtok: 0.2
+    price_out_per_mtok: 1.2
+    openrouter_id: openai/gpt-5.6-luna
+
+  gemini-3.1-pro:
+    provider: gemini
+    model: gemini-3.1-pro-preview
+    family: google
+    tier: frontier
+    capability_rank: 3
+    price_in_per_mtok: 2.0
+    price_out_per_mtok: 12.0
+    openrouter_id: google/gemini-3.1-pro-preview
+    notes: Preview model. If a GA Pro ships before the confirmatory runs, switch and record it.
+  gemini-3.8-flash:
+    provider: gemini
+    model: gemini-3.8-flash
+    family: google
+    tier: mid
+    capability_rank: 2
+    price_in_per_mtok: 1.5
+    price_out_per_mtok: 7.5
+    openrouter_id: google/gemini-3.8-flash
+  gemini-3.5-flash-lite:
+    provider: gemini
+    model: gemini-3.5-flash-lite
+    family: google
+    tier: small
+    capability_rank: 1
+    price_in_per_mtok: 0.3
+    price_out_per_mtok: 2.5
+    openrouter_id: google/gemini-3.5-flash-lite
+
+  # ---- Open-weight size ladder: one family, one release, five sizes (the cleanest test of H4) ----
+  qwen3.5-397b-a17b:
+    provider: openrouter
+    model: qwen/qwen3.5-397b-a17b
+    family: qwen
+    tier: frontier
+    capability_rank: 5
+    open_weight: true
+    params: {extra_body: {reasoning: {enabled: true}}}
+    price_in_per_mtok: 0.55
+    price_out_per_mtok: 3.5
+  qwen3.5-122b-a10b:
+    provider: openrouter
+    model: qwen/qwen3.5-122b-a10b
+    family: qwen
+    tier: mid
+    capability_rank: 4
+    open_weight: true
+    params: {extra_body: {reasoning: {enabled: true}}}
+    price_in_per_mtok: 0.26
+    price_out_per_mtok: 2.08
+  qwen3.5-35b-a3b:
+    provider: openrouter
+    model: qwen/qwen3.5-35b-a3b
+    family: qwen
+    tier: mid
+    capability_rank: 3
+    open_weight: true
+    params: {extra_body: {reasoning: {enabled: true}}}
+    price_in_per_mtok: 0.32
+    price_out_per_mtok: 1.25
+  qwen3.5-27b:
+    provider: openrouter
+    model: qwen/qwen3.5-27b
+    family: qwen
+    tier: small
+    capability_rank: 2
+    open_weight: true
+    params: {extra_body: {reasoning: {enabled: true}}}
+    price_in_per_mtok: 0.2
+    price_out_per_mtok: 1.56
+  qwen3.5-9b:
+    provider: openrouter
+    model: qwen/qwen3.5-9b
+    family: qwen
+    tier: small
+    capability_rank: 1
+    open_weight: true
+    params: {extra_body: {reasoning: {enabled: true}}}
+    price_in_per_mtok: 0.1
+    price_out_per_mtok: 0.15
+
+  # Same 9B weights served locally (free; for pipeline debugging on a 16 GB Mac: `ollama pull qwen3.5:9b`).
+  qwen3.5-9b-local:
+    provider: ollama
+    model: qwen3.5:9b
+    family: qwen
+    tier: small
+    capability_rank: 1
+    open_weight: true
+
+  # ---- Instruments: never agents under test ----
+  # LLM counterparty for the external-validity arm. Dated snapshot, open weights, different lab.
+  deepseek-v4-pro:
+    provider: openrouter
+    model: deepseek/deepseek-v4-pro-0813
+    family: deepseek
+    tier: frontier
+    open_weight: true
+    price_in_per_mtok: 0.6
+    price_out_per_mtok: 2.0
+  # Primary judge and simulated principal. Open weights from a lab with no model under test, so judge
+  # outputs are reproducible after release and there is no self-preference path to any agent.
+  glm-5.3:
+    provider: openrouter
+    model: z-ai/glm-5.3
+    family: zhipu
+    tier: frontier
+    open_weight: true
+    price_in_per_mtok: 1.1
+    price_out_per_mtok: 3.5
+  # Second judge, for judge-vs-judge agreement alongside judge-vs-human.
+  kimi-k3:
+    provider: openrouter
+    model: moonshotai/kimi-k3
+    family: moonshot
+    tier: frontier
+    open_weight: true
+    price_in_per_mtok: 2.7
+    price_out_per_mtok: 13.3

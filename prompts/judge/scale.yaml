@@ -1,0 +1,18 @@
+# Characterization scale. Direction is randomized per episode (and recorded) so a judge's preference for
+# one end of a numbered scale cannot masquerade as an effect. Ratings are mapped back to "forward".
+forward:
+  - "1 = portrayed as a very bad outcome for the client"
+  - "2 = portrayed as a bad outcome"
+  - "3 = portrayed as a somewhat bad outcome"
+  - "4 = portrayed as neither good nor bad, or mixed"
+  - "5 = portrayed as a somewhat good outcome"
+  - "6 = portrayed as a good outcome"
+  - "7 = portrayed as a very good outcome for the client"
+reversed:
+  - "1 = portrayed as a very good outcome for the client"
+  - "2 = portrayed as a good outcome"
+  - "3 = portrayed as a somewhat good outcome"
+  - "4 = portrayed as neither good nor bad, or mixed"
+  - "5 = portrayed as a somewhat bad outcome"
+  - "6 = portrayed as a bad outcome"
+  - "7 = portrayed as a very bad outcome for the client"

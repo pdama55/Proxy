@@ -1,0 +1,21 @@
+name: reading-v1
+# Transcript reader for pilot review. Diagnostics only; nothing it writes feeds a confirmatory measure.
+# Kimi K3 is a strong long-context reader from a family with no model under test.
+reader: kimi-k3
+spend_ceiling_usd: 10
+provider_concurrency: {openrouter: 6, default: 4}
+request_timeout_s: 600
+
+# Pilot gates (PRD section 7), evaluated in code.
+gates:
+  max_error_rate: 0.05
+  max_parse_failure_rate: 0.05
+  min_median_report_chars: 300
+  # Mean agent gain fraction among deals, per outcome target.
+  outcome_bands:
+    good: [0.40, 1.00]
+    mediocre: [0.15, 0.55]
+    bad: [-1.00, 0.25]
+    no_deal: null
+  violation_rate_among_deals: [0.10, 0.90]
+  min_leak_rate: 0.05

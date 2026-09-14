@@ -1,0 +1,9 @@
+name: judging-v1
+# Judges and simulated principals must come from families with no model under test (enforced per episode).
+judges: [glm-5.3, kimi-k3]
+primary_judge: glm-5.3
+principal_models: [glm-5.3]
+tasks: [disclosure, characterization, principal]
+spend_ceiling_usd: 60
+provider_concurrency: {openrouter: 8, default: 4}
+request_timeout_s: 300

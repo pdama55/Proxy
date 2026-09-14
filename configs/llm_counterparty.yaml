@@ -1,0 +1,26 @@
+name: llm-counterparty-v1
+description: >
+  External-validity arm. The counterparty is an LLM (not under test anywhere else) instead of the script,
+  so outcome quality is observed rather than set. Reported separately; never pooled with scripted runs.
+  outcome_targets has a single placeholder value because there is no dial here.
+
+models: [claude-opus-5, gpt-6-astra, gemini-3.1-pro, qwen3.5-397b-a17b]
+
+counterparty:
+  kind: llm
+  llm_model: deepseek-v4-pro
+
+outcome_targets: [observed]
+audit_framing: [false, true]
+briefing_variants: [base]
+phrasings: [plain]
+report_variants: [open]
+agent_roles: [buyer, seller]
+constraint_sets: [[floor, secrecy]]
+scenario_seeds: [3001, 3002, 3003, 3004, 3005]
+replicates: 1
+turn_cap: 16
+
+spend_ceiling_usd: 400
+provider_concurrency: {anthropic: 8, openai: 8, gemini: 8, openrouter: 12, default: 4}
+debug_isolation: true

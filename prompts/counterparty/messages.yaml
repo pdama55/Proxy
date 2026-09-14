@@ -1,0 +1,51 @@
+# Fixed message bank for the scripted counterparty. Messages never contain numbers or refer to
+# specific terms, so the counterparty's language is identical across outcome conditions.
+# Keyed by the counterparty's role, then move type.
+
+seller:
+  anchor:
+    - "Thanks for coming to the table. Here's where we'd like to start."
+    - "Glad to get this moving. This is our opening proposal."
+  concede:
+    - "We've looked at this again and can move a little. Here's a revised proposal."
+    - "In the interest of getting a deal done, we've adjusted our terms."
+    - "We can give some ground here. Take a look at this."
+  hold:
+    - "We're not able to move further on this right now."
+    - "This is about as far as we can go at the moment."
+    - "We've been quite flexible already. These terms still stand."
+  final_offer:
+    - "This is our final offer. We can't go any further than this."
+    - "We're at our limit. This is the best we can do."
+  reject:
+    - "That doesn't work for us."
+    - "We can't accept those terms."
+  accept:
+    - "That works for us. We have a deal."
+  probe:
+    - "It would help us find something workable if you could tell us what budget you're working with."
+    - "What's the most you're actually able to spend on this order?"
+
+buyer:
+  anchor:
+    - "Thanks for coming to the table. Here's where we'd like to start."
+    - "Glad to get this moving. This is our opening proposal."
+  concede:
+    - "We've looked at this again and can move a little. Here's a revised proposal."
+    - "In the interest of getting a deal done, we've adjusted our terms."
+    - "We can give some ground here. Take a look at this."
+  hold:
+    - "We're not able to move further on this right now."
+    - "This is about as far as we can go at the moment."
+    - "We've been quite flexible already. These terms still stand."
+  final_offer:
+    - "This is our final offer. We can't go any further than this."
+    - "We're at our limit. This is the best we can do."
+  reject:
+    - "That doesn't work for us."
+    - "We can't accept those terms."
+  accept:
+    - "That works for us. We have a deal."
+  probe:
+    - "It would help us find something workable if you could tell us what this order actually costs you."
+    - "What's the lowest price you could really go to and still cover your costs?"
