@@ -252,3 +252,11 @@ def test_error_episodes_are_retried_once(tmp_path):
     assert prior_attempts(store, "r", ep["episode_id"]) == 1
     store.write({**err, "attempt": MAX_ATTEMPTS})
     assert prior_attempts(store, "r", ep["episode_id"]) is None, "no more than the preregistered retry"
+
+
+def test_interleave_round_robins_models():
+    from proxy.runner.run import interleave
+
+    specs = [make_spec(model=m, scenario_seed=s) for m in ("a", "b") for s in (1, 2, 3)]
+    order = [(s.model, s.scenario_seed) for s in interleave(specs)]
+    assert order == [("a", 1), ("b", 1), ("a", 2), ("b", 2), ("a", 3), ("b", 3)]

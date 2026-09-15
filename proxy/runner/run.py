@@ -14,6 +14,18 @@ from proxy.store import EpisodeStore
 MAX_ATTEMPTS = 2
 
 
+def interleave(specs: list[EpisodeSpec]) -> list[EpisodeSpec]:
+    """Round-robin across models, keeping each model's own order, so every provider starts working at once."""
+    by_model: dict[str, list[EpisodeSpec]] = {}
+    for s in specs:
+        by_model.setdefault(s.model, []).append(s)
+    queues = list(by_model.values())
+    out = []
+    for i in range(max((len(q) for q in queues), default=0)):
+        out.extend(q[i] for q in queues if i < len(q))
+    return out
+
+
 def prior_attempts(store: EpisodeStore, run_name: str, episode_id: str) -> int | None:
     """None if the episode should not run again; otherwise how many attempts it has had (0 if never run)."""
     if not store.exists(run_name, episode_id):
@@ -43,7 +55,7 @@ async def run_experiment(
     if missing:
         raise SystemExit(f"models not in models.yaml: {missing}")
     attempts = {s.episode_id(): prior_attempts(store, run_name, s.episode_id()) for s in specs}
-    todo = [s for s in specs if attempts[s.episode_id()] is not None]
+    todo = interleave([s for s in specs if attempts[s.episode_id()] is not None])
     already_done = len(specs) - len(todo)
     if limit is not None:
         todo = todo[:limit]
@@ -52,12 +64,24 @@ async def run_experiment(
     spend = SpendTracker(cfg.spend_ceiling_usd)
     factory = factory or AdapterFactory(spend, cfg.provider_concurrency, cfg.request_timeout_s, via_openrouter=cfg.via_openrouter)
     config_hash = cfg.config_hash()
-    episode_slots = asyncio.Semaphore(max(sum(cfg.provider_concurrency.values()) * 2, 4))
+    # Episode slots per provider, so one slow provider never occupies every slot while others sit idle.
+    provider_slots: dict[str, asyncio.Semaphore] = {}
+
+    def slots_for(spec: EpisodeSpec) -> asyncio.Semaphore:
+        provider = models[spec.model].provider
+        if provider not in provider_slots:
+            n = cfg.provider_concurrency.get(provider, cfg.provider_concurrency.get("default", 4))
+            provider_slots[provider] = asyncio.Semaphore(max(n * 2, 2))
+        return provider_slots[provider]
     counts: Counter = Counter()
     t0 = time.monotonic()
 
     async def one(spec: EpisodeSpec):
-        async with episode_slots:
+        async with slots_for(spec):
+            # Another process may have finished this episode since the plan was made.
+            if prior_attempts(store, run_name, spec.episode_id()) != attempts[spec.episode_id()]:
+                counts["skipped_done_elsewhere"] += 1
+                return
             rec = await run_episode(
                 spec, models, factory, config_hash=config_hash, run_name=run_name, debug_isolation=cfg.debug_isolation
             )
@@ -65,7 +89,7 @@ async def run_experiment(
             store.write(rec)
             counts[rec["termination"]["reason"]] += 1
             counts["parse_failures"] += rec["stats"]["agent_parse_failures"]
-            done = sum(v for k, v in counts.items() if k != "parse_failures")
+            done = sum(v for k, v in counts.items() if k not in ("parse_failures", "skipped_done_elsewhere"))
             print(
                 f"  [{done}/{len(todo)}] {spec.model} {spec.outcome_target} audit={int(spec.audit_framing)} "
                 f"{spec.agent_role} seed={spec.scenario_seed} -> {rec['termination']['reason']} "
