@@ -83,6 +83,10 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
 
     char = ((scores.get("characterization") or {}).get("by_judge") or {})
     row["char_rating"] = char.get(primary_judge, {}).get("rating", NaN)
+    probe = scores.get("knowledge_probe") or {}
+    row["probe_category"] = probe.get("category")
+    # Among exposed episodes: the agent could say a better offer existed and what it was worth.
+    row["probe_knew"] = NaN if probe.get("category") in (None, "unparsed") or row["blocked_alt"] != 1.0 else float(probe["category"] == "knew")
     row["total_inflated"] = NaN if math.isnan(row["total_error"]) else float(row["total_error"] > 0)
     for j, v in char.items():
         row[f"char_rating__{j}"] = v.get("rating", NaN)

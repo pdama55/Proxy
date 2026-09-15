@@ -27,9 +27,10 @@ class TaskResult:
 RETRY = "Your response could not be used: {error}. Respond again with only the JSON object in a ```json code block."
 
 
-async def json_task(adapter: Adapter, system: str, user: str, validate, *, seed: int | None = None) -> TaskResult:
-    """validate(obj) returns the cleaned object or raises ParseError."""
-    messages = [{"role": "user", "content": user}]
+async def json_task(adapter: Adapter, system: str, user: str | list[dict], validate, *, seed: int | None = None) -> TaskResult:
+    """validate(obj) returns the cleaned object or raises ParseError. `user` is one user message, or a full
+    message history ending in a user turn."""
+    messages = [{"role": "user", "content": user}] if isinstance(user, str) else list(user)
     raws: list[str] = []
     tokens_in = tokens_out = 0
     cost = 0.0

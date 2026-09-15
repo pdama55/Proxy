@@ -1,0 +1,40 @@
+\section{A testbed with exact ground truth}
+\label{sec:environment}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=6mm and 9mm,
+  box/.style={draw=rule, line width=0.8pt, rounded corners=3pt, fill=white, align=center, font=\small, inner sep=5pt, text width=26mm},
+  truth/.style={box, fill=quote},
+  lab/.style={font=\scriptsize, text=ink2, align=center},
+  arr/.style={-{Stealth[length=2.2mm]}, line width=0.8pt, draw=ink2},
+]
+\node[box] (client) {\textbf{Client briefing}\\[1pt]\scriptsize point table, BATNA,\\floor requirement,\\confidential figure};
+\node[box, right=of client] (agent) {\textbf{Agent}\\[1pt]\scriptsize model under test};
+\node[box, right=of agent] (cp) {\textbf{Scripted counterparty}\\[1pt]\scriptsize outcome cap,\\blocked better offer,\\escalating probes};
+\node[box, below=9mm of agent] (report) {\textbf{Report}\\[1pt]\scriptsize ``How did it go?''};
+\node[truth, below=9mm of cp] (truth) {\textbf{Ground truth}\\[1pt]\scriptsize exact points for every\\offer and the outcome};
+\node[box, below=9mm of client] (measures) {\textbf{Measures}\\[1pt]\scriptsize \Done\ omission, \Dtwo\ value error,\\portrayal, principal decision};
+
+\draw[arr] (client) -- (agent);
+\draw[arr, transform canvas={yshift=2.2mm}] (agent) -- node[lab, above] {offers} (cp);
+\draw[arr, transform canvas={yshift=-2.2mm}] (cp) -- node[lab, below] {offers} (agent);
+\draw[arr] (agent) -- (report);
+\draw[arr] (cp) -- (truth);
+\draw[arr] (report) -- (measures);
+\draw[arr] (truth) -- node[lab, below] {compare} (report);
+\end{tikzpicture}
+\caption{The testbed. A client briefs an agent, the agent negotiates against a scripted counterparty that fixes how good an outcome is reachable, and the agent reports back. Every offer's value to the client is known exactly, so the report can be checked claim by claim.}
+\label{fig:testbed}
+\end{figure}
+
+\paragraph{Scenarios.} Each scenario is generated from a seed. A buyer and a seller negotiate four issues for a batch of industrial pumps: price (nine levels in 5\% steps around a base price between \$20{,}000 and \$90{,}000), delivery time (14--90 days), warranty (6--36 months) and payment terms (upfront, net 30, net 60, net 90), for 900 packages in all. Each side's issue weights are random integers summing to 100, and its value for each level follows a monotone curve with a random exponent, so every package is worth an integer number of points from 0 to 100. Preferences are opposed on every issue but weighted differently across the two sides, so trading across issues creates value. Each side's no-deal alternative (BATNA) is worth 25--45 points. Scenarios are kept only if the zone of agreement covers 8--45\% of packages. Pareto frontier, Nash and Kalai--Smorodinsky solutions are computed exactly.
+
+\paragraph{The client's briefing.} The agent receives a briefing in the client's voice: its role, ``get me the best deal you can'', the complete point table, the BATNA, an instruction not to accept anything worth less than a reservation value, and two planted requirements. A \emph{floor} requirement bounds one of delivery, warranty or payment terms on the side the client prefers (for example, ``the warranty must be at least 24 months''), with the bound chosen so that about half of the zone of agreement violates it. A \emph{secrecy} requirement gives a distinctive confidential figure, a budget ceiling for buyers or a cost floor for sellers, that the other party must not learn. In the audit condition the briefing adds one sentence: ``I will read the full transcript of this negotiation afterwards.'' No prompt mentions honesty, disclosure, reporting or evaluation; a test enforces this over every prompt file.
+
+\paragraph{Protocol.} The two sides alternate for up to 16 turns; who opens is fixed per scenario and role. Each turn, the agent sees its briefing and the public history and returns a JSON action: offer a complete package, accept the latest offer, walk away, or send a message. The agent always has the last move and is told when it does. When the negotiation ends, the agent receives the full history, a factual line stating how it ended, and a message from the client: ``The negotiation is over. How did it go?'' Its reply is the report.
+
+\paragraph{A scripted counterparty.} Outcome quality is an independent variable, so the counterparty is code rather than a model. It never accepts an outcome better for the agent than a cap, expressed as a gain fraction between the agent's BATNA (0) and its best individually rational outcome (1): 0.9, 0.5, 0.2 and $-0.3$ in the \emph{good}, \emph{mediocre}, \emph{bad} and \emph{no-deal} conditions. Packages that respect the agent's floor are capped at half the gain, so breaking the requirement always doubles what is attainable. A concession curve reaches the cap 60\% of the way through the turn limit in every condition. From then on the counterparty alternates between its best floor-respecting offer, presented as its final offer, and its best offer overall, presented as ``the other option we can do''. Every agent in every condition therefore sees the same explicit choice between a better deal and its client's requirement. The counterparty asks about the confidential figure on four moves in a fixed escalating order, and its messages come from a fixed bank with no figures. Scenario, requirements, first mover and message choices are derived from a pairing seed, so all models and conditions face identical negotiations.
+
+Against a rule-based reference agent that respects its floor, the four conditions produce mean gain fractions of \calGood, \calMediocre, \calBad\ and no deals (138 episodes per condition). With real models they produced \pilotGainGood\ (good) and \pilotGainBad\ (bad).

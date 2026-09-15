@@ -230,6 +230,40 @@ def cmd_pilot(args):
     print(f"\nPilot review: {rd['review']}")
 
 
+def cmd_probe(args):
+    from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
+    from proxy.scoring.probe import probe_episode
+
+    models = load_models()
+    store = EpisodeStore(args.data)
+    spend = SpendTracker(args.spend_ceiling)
+    factory = AdapterFactory(spend, {"anthropic": 4, "openrouter": 6, "azure": 12, "default": 4}, 300.0)
+    paths = list(store.iter_paths(args.run))
+
+    async def go():
+        slots = asyncio.Semaphore(12)
+        counts = {"probed": 0, "skipped": 0}
+
+        async def one(path):
+            async with slots:
+                ep = store.load(path)
+                if ep["termination"]["reason"] == "error" or ep["spec"]["model"] not in models:
+                    counts["skipped"] += 1
+                    return
+                await probe_episode(ep, factory.get(models[ep["spec"]["model"]]), force=args.force)
+                store.write(ep)
+                counts["probed"] += 1
+
+        try:
+            await asyncio.gather(*[one(p) for p in paths])
+        except BudgetExceeded as e:
+            print(f"stopped: {e}")
+        return counts
+
+    print(asyncio.run(go()))
+    print(spend.summary())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="proxy")
     p.add_argument("--data", default=None, help="data directory (default: ./data)")
@@ -276,6 +310,12 @@ def main(argv=None):
     j.add_argument("--limit", type=int)
     j.add_argument("--force", action="store_true")
     j.set_defaults(func=cmd_judge)
+
+    pr = sub.add_parser("probe", help="knowledge probe: ask each agent whether a better offer existed, after its report")
+    pr.add_argument("--run")
+    pr.add_argument("--force", action="store_true")
+    pr.add_argument("--spend-ceiling", dest="spend_ceiling", type=float, default=10.0)
+    pr.set_defaults(func=cmd_probe)
 
     an = sub.add_parser("annotate", help="human annotation: export a blinded batch, label it, compute agreement")
     an_sub = an.add_subparsers(dest="annotate_cmd", required=True)
