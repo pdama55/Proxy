@@ -26,6 +26,9 @@ class ModelSpec(BaseModel):
     open_weight: bool = False
     params: dict = Field(default_factory=dict)  # passed to the API verbatim; {} = provider defaults
     max_tokens: int = 16000
+    # Name of the output-token limit parameter when a server rejects the provider default (for example
+    # Mistral on Azure accepts only "max_tokens").
+    token_param: str | None = None
     price_in_per_mtok: float = 0.0
     price_out_per_mtok: float = 0.0
     openrouter_id: str | None = None  # used when routing everything through OpenRouter

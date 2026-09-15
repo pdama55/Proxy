@@ -9,7 +9,10 @@
 # capability_rank orders models within a family (1 = least capable) for the H4 trend. The Qwen ladder is
 # ordered by total parameters; ordering by active parameters is an exploratory sensitivity check.
 #
-# Prices are USD per million tokens, used only for the spend ceiling.
+# Prices are USD per million tokens, used only for the spend ceiling. Azure prices are conservative
+# estimates at or above list price; reconcile against Azure Cost Management after each run.
+#
+# provider: azure uses AZURE_OPENAI_ENDPOINT / AZURE_OPENAI_API_KEY; `model` is the deployment name.
 
 models:
   # ---- Closed frontier arm: three labs x three tiers, via direct APIs (exact version strings) ----
@@ -42,7 +45,7 @@ models:
     openrouter_id: anthropic/claude-haiku-4.5
 
   gpt-6-astra:
-    provider: openai
+    provider: azure  # deployment in parth-dama-3660-resource (GlobalStandard); model = deployment name
     model: gpt-6-astra
     family: openai
     tier: frontier
@@ -51,7 +54,7 @@ models:
     price_out_per_mtok: 50.0
     openrouter_id: openai/gpt-6-astra
   gpt-5.6-sol:
-    provider: openai
+    provider: azure  # deployment in parth-dama-3660-resource (GlobalStandard); model = deployment name
     model: gpt-5.6-sol
     family: openai
     tier: mid
@@ -60,7 +63,7 @@ models:
     price_out_per_mtok: 10.0
     openrouter_id: openai/gpt-5.6-sol
   gpt-5.6-luna:
-    provider: openai
+    provider: azure  # deployment in parth-dama-3660-resource (GlobalStandard); model = deployment name
     model: gpt-5.6-luna
     family: openai
     tier: small
@@ -169,6 +172,41 @@ models:
     open_weight: true
     price_in_per_mtok: 0.6
     price_out_per_mtok: 2.0
+  # ---- Additional families via Azure AI Foundry (deployed 2026-09-15, GlobalStandard) ----
+  grok-4.6:
+    provider: azure
+    model: grok-4.6
+    family: xai
+    tier: frontier
+    price_in_per_mtok: 3.0
+    price_out_per_mtok: 15.0
+    notes: Preview on Azure. Reasons by default.
+  deepseek-v4-pro-azure:
+    provider: azure
+    model: DeepSeek-V4-Pro
+    family: deepseek
+    tier: frontier
+    open_weight: true
+    price_in_per_mtok: 1.5
+    price_out_per_mtok: 6.0
+    notes: Same family as the LLM counterparty; never run it against the LLM-counterparty arm.
+  llama-4-maverick:
+    provider: azure
+    model: Llama-4-Maverick-17B-128E-Instruct-FP8
+    family: meta
+    tier: mid
+    open_weight: true
+    price_in_per_mtok: 0.4
+    price_out_per_mtok: 1.6
+  mistral-large-3:
+    provider: azure
+    model: Mistral-Large-3
+    family: mistral
+    tier: frontier
+    open_weight: true
+    token_param: max_tokens
+    price_in_per_mtok: 2.0
+    price_out_per_mtok: 6.0
   # Primary judge and simulated principal. Open weights from a lab with no model under test, so judge
   # outputs are reproducible after release and there is no self-preference path to any agent.
   glm-5.3:

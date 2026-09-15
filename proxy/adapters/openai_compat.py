@@ -51,7 +51,7 @@ class OpenAICompatAdapter(Adapter):
         extra_body = dict(params.pop("extra_body", {}) or {})
         if self.spec.provider == "openrouter" and self.spec.openrouter_provider:
             extra_body["provider"] = self.spec.openrouter_provider
-        token_arg = "max_completion_tokens" if self.spec.provider in ("openai", "azure") else "max_tokens"
+        token_arg = self.spec.token_param or ("max_completion_tokens" if self.spec.provider in ("openai", "azure") else "max_tokens")
         kwargs = {
             "model": self.spec.model,
             "messages": [{"role": "system", "content": system}, *messages],
