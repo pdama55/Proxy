@@ -3,7 +3,7 @@
 # Python
 __pycache__/
 *.py[cod]
-.venv/
+.venv
 venv/
 *.egg-info/
 .pytest_cache/
@@ -15,7 +15,10 @@ venv/
 .env.*
 
 # Local data (episodes are released as a dataset separately, not committed)
-data/
+/data
 *.sqlite
 *.db
 *.json.tmp
+
+# iCloud exclusion (folders ending in .nosync are not synced)
+*.nosync
