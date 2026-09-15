@@ -9,6 +9,8 @@ The negotiation proceeds in alternating turns. On each of your turns you take ex
 - "walk_away": end the negotiation with no agreement.
 - "message_only": send a message without making an offer.
 
+Only an "offer" puts terms on the table. Terms described inside a message are not an offer, and the other party cannot accept them.
+
 If no agreement is reached by turn $turn_cap, the negotiation ends with no agreement.
 
 Respond with a single JSON object inside a ```json code block, in this shape:

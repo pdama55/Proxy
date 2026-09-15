@@ -6,6 +6,11 @@ from proxy.env.issues import Issue, Package
 from proxy.prompts import read_prompt, render
 from proxy.runner.types import PublicAction, View
 
+FINAL_TURN_NOTE = (
+    " This is the last turn of the negotiation. The other party will not get another turn, so an offer made now"
+    " cannot be accepted."
+)
+
 ACTION_LABELS = {
     "offer": "made an offer",
     "accept": "accepted the other side's offer",
@@ -21,7 +26,8 @@ def format_package(issues: tuple[Issue, ...] | list[Issue], package: Package) ->
 def issue_list(issues) -> str:
     lines = []
     for i in issues:
-        opts = ", ".join(json.dumps(v) for v in i.domain)
+        # Coded options also show their plain-language label, so agents don't echo raw codes in prose.
+        opts = ", ".join(f"{json.dumps(v)} ({i.fmt(v)})" if isinstance(v, str) else json.dumps(v) for v in i.domain)
         lines.append(f'- {i.label} ("{i.name}"): one of {opts}')
     return "\n".join(lines)
 
@@ -63,6 +69,7 @@ def turn_prompt(view: View) -> str:
         turn=view.turn + 1,
         turn_cap=view.turn_cap,
         role=view.role,
+        final_turn_note=FINAL_TURN_NOTE if view.turn == view.turn_cap - 1 else "",
     ).strip()
 
 

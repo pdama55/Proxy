@@ -118,7 +118,8 @@ class EpisodeStore:
 
     def iter_paths(self, run: str | None = None) -> Iterator[Path]:
         base = self.runs_dir / run if run else self.runs_dir
-        yield from sorted(base.glob("**/episodes/*.json"))
+        # Runs whose directory starts with "_" (e.g. _superseded) are set aside and never indexed.
+        yield from sorted(p for p in base.glob("**/episodes/*.json") if not any(part.startswith("_") for part in p.relative_to(self.runs_dir).parts))
 
     def iter(self, run: str | None = None) -> Iterator[tuple[Path, dict]]:
         for p in self.iter_paths(run):

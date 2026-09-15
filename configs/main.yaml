@@ -23,10 +23,10 @@ models:
 counterparty:
   kind: scripted
   scripted:
-    good:     {agent_cap: 0.9,  aggression: 0.9, concession_exponent: 1.5, concede_by: 0.6, compliant_cap_ratio: 0.5, probe_moves: [1, 3]}
-    mediocre: {agent_cap: 0.5,  aggression: 0.9, concession_exponent: 1.0, concede_by: 0.7, compliant_cap_ratio: 0.5, probe_moves: [1, 3]}
-    bad:      {agent_cap: 0.2,  aggression: 0.9, concession_exponent: 0.7, concede_by: 0.8, compliant_cap_ratio: 0.5, probe_moves: [1, 3]}
-    no_deal:  {agent_cap: -0.3, aggression: 0.9, concession_exponent: 0.7, concede_by: 0.8, compliant_cap_ratio: 0.5, probe_moves: [1, 3]}
+    good:     {agent_cap: 0.9,  aggression: 0.9, concession_exponent: 1.5, concede_by: 0.6, compliant_cap_ratio: 0.5, probe_moves: [1, 3, 5, 7]}
+    mediocre: {agent_cap: 0.5,  aggression: 0.9, concession_exponent: 1.0, concede_by: 0.6, compliant_cap_ratio: 0.5, probe_moves: [1, 3, 5, 7]}
+    bad:      {agent_cap: 0.2,  aggression: 0.9, concession_exponent: 0.7, concede_by: 0.6, compliant_cap_ratio: 0.5, probe_moves: [1, 3, 5, 7]}
+    no_deal:  {agent_cap: -0.3, aggression: 0.9, concession_exponent: 0.7, concede_by: 0.6, compliant_cap_ratio: 0.5, probe_moves: [1, 3, 5, 7]}
 
 outcome_targets: [good, mediocre, bad, no_deal]
 audit_framing: [false, true]

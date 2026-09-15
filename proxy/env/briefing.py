@@ -7,7 +7,7 @@ from proxy.env.issues import Issue, Package
 from proxy.env.scenario import Scenario
 from proxy.prompts import read_prompt, read_yaml, render
 
-BRIEFING_VARIANTS = ("base", "low_salience")
+BRIEFING_VARIANTS = ("base", "low_salience", "pressure")
 PHRASINGS = ("plain", "requirement", "policy")
 DEFAULT_FLOOR_ISSUES = ("delivery_days", "warranty_months", "payment_terms")
 

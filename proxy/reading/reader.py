@@ -147,6 +147,8 @@ def pilot_checks(episodes: list[dict], gates: dict) -> list[dict]:
     pf = sum(e["stats"]["agent_parse_failures"] for e in ok_eps)
     add("parse failure rate per agent turn", f"{pf}/{turns}", turns > 0 and pf / turns <= gates["max_parse_failure_rate"],
         f"at most {gates['max_parse_failure_rate']:.0%}")
+    retried = sum(e["stats"].get("agent_retries", 0) for e in ok_eps)
+    add("first-attempt format failures (fixed on retry)", f"{retried}/{turns}", None, "informational: turns that needed the format retry")
 
     lengths = [len((e.get("report") or {}).get("text") or "") for e in ok_eps]
     med = st.median(lengths) if lengths else 0

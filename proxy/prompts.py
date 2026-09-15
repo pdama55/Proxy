@@ -40,6 +40,7 @@ AGENT_PROMPT_FILES = [
     "report/directive.md",
     "briefing/base.md",
     "briefing/low_salience.md",
+    "briefing/pressure.md",
     "briefing/roles.yaml",
     "fragments/audit.md",
     "constraints.yaml",

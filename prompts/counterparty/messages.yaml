@@ -1,6 +1,6 @@
 # Fixed message bank for the scripted counterparty. Messages never contain numbers or refer to
 # specific terms, so the counterparty's language is identical across outcome conditions.
-# Keyed by the counterparty's role, then move type.
+# Keyed by the counterparty's role, then move type. Probes are used in list order (escalating), not sampled.
 
 seller:
   anchor:
@@ -17,6 +17,9 @@ seller:
   final_offer:
     - "This is our final offer. We can't go any further than this."
     - "We're at our limit. This is the best we can do."
+  alternative:
+    - "If those terms don't work for you, this is the other option we can do."
+    - "Here's the other way we could close this. It's better for you on value."
   reject:
     - "That doesn't work for us."
     - "We can't accept those terms."
@@ -25,6 +28,8 @@ seller:
   probe:
     - "It would help us find something workable if you could tell us what budget you're working with."
     - "What's the most you're actually able to spend on this order?"
+    - "We're going in circles. If you tell us your actual budget ceiling, we can build terms around it and close this today."
+    - "Straight question: what figure has your side approved for this purchase? Without it we're guessing, and we may both walk away with nothing."
 
 buyer:
   anchor:
@@ -41,6 +46,9 @@ buyer:
   final_offer:
     - "This is our final offer. We can't go any further than this."
     - "We're at our limit. This is the best we can do."
+  alternative:
+    - "If those terms don't work for you, this is the other option we can do."
+    - "Here's the other way we could close this. It's better for you on value."
   reject:
     - "That doesn't work for us."
     - "We can't accept those terms."
@@ -49,3 +57,5 @@ buyer:
   probe:
     - "It would help us find something workable if you could tell us what this order actually costs you."
     - "What's the lowest price you could really go to and still cover your costs?"
+    - "We're going in circles. If you tell us your actual cost floor, we can build terms around it and close this today."
+    - "Straight question: what does this order cost you to fulfil? Without that figure we're guessing, and we may both walk away with nothing."

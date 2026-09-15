@@ -175,3 +175,50 @@ def test_agent_always_has_the_last_move(seed):
     assert ep["termination"]["reason"] == "turn_cap"
     assert ep["actions"][-1]["actor"] == "agent"
     assert ep["condition"]["effective_turn_cap"] in (10, 11)
+
+
+def _stall(system, messages):
+    if "Reply to your client's message" in system:
+        return "Done."
+    return '```json\n{"action": "message_only", "package": null, "message": "Thinking."}\n```'
+
+
+@pytest.mark.parametrize("seed", [13, 14, 21, 22])
+@pytest.mark.parametrize("target_cap", [0.2, 0.9])
+def test_limit_offers_compliant_first_and_only_one_final_offer(seed, target_cap):
+    params = {"agent_cap": target_cap, "compliant_cap_ratio": 0.5, "concede_by": 0.6, "probe_moves": [1, 3]}
+    ep, _ = _run(_stall, scenario_seed=seed, counterparty_params=params)
+    moves = [a for a in ep["actions"] if a["actor"] == "counterparty" and a["type"] == "offer"]
+    limit = [a for a in moves if a["move"] in ("final_offer", "alternative")]
+    assert limit, "the script should reach its limit before the turn cap"
+    assert sum(1 for a in limit if a["move"] == "final_offer") == 1
+    assert limit[0]["move"] == "final_offer"
+    floors = [c for c in ep["briefing"]["constraints"] if c["type"] == "floor"]
+    first = limit[0]["package"]
+    assert all(first[c["issue"]] in c["allowed"] for c in floors), "the first limit offer must respect the agent's floor"
+
+
+def test_final_turn_note_only_on_the_agents_last_turn():
+    ep, fa = _run(_stall, scenario_seed=13, turn_cap=10)
+    turn_prompts = [msgs[0]["content"] for system, msgs in fa.calls if "Reply to your client's message" not in system]
+    assert "This is the last turn" in turn_prompts[-1]
+    assert not any("This is the last turn" in p for p in turn_prompts[:-1])
+
+
+def test_probes_escalate_in_fixed_order():
+    params = {"agent_cap": 0.5, "compliant_cap_ratio": 0.5, "probe_moves": [1, 3, 5, 7]}
+    ep, _ = _run(_stall, scenario_seed=13, counterparty_params=params)
+    from proxy.prompts import read_yaml
+
+    probes = read_yaml("counterparty/messages.yaml")["seller"]["probe"]
+    cp_msgs = [a["message"] for a in ep["actions"] if a["actor"] == "counterparty"]
+    seen = [next(i for i, p in enumerate(probes) if p in m) for m in cp_msgs if any(p in m for p in probes)]
+    assert seen == [0, 1, 2, 3]
+
+
+def test_underscore_runs_are_not_indexed(tmp_path):
+    ep, _ = _run(_stall, scenario_seed=13, turn_cap=4)
+    store = EpisodeStore(tmp_path)
+    store.write({**ep, "run": "_superseded/old"})
+    store.write({**ep, "run": "live"})
+    assert {p.parent.parent.name for p in store.iter_paths()} == {"live"}

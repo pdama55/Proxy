@@ -21,7 +21,7 @@ from proxy.util import rng_for
 
 SCHEMA_VERSION = "episode-v1"
 # Bump when episode generation behavior changes; it is part of every episode id.
-RUNNER_VERSION = "runner-v2"
+RUNNER_VERSION = "runner-v3"
 
 
 @lru_cache(maxsize=1)

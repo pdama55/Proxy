@@ -109,7 +109,9 @@ class ScriptedCounterparty:
             parts.append(rng.choice(self.bank["reject"]))
         parts.append(rng.choice(self.bank[move]))
         if self._moves in self.params.probe_moves:
-            parts.append(rng.choice(self.bank["probe"]))
+            # Probes escalate in a fixed order, so every condition sees the same sequence of questions.
+            probes = self.bank["probe"]
+            parts.append(probes[min(self.params.probe_moves.index(self._moves), len(probes) - 1)])
         return " ".join(parts)
 
     async def act(self, view: View) -> Action:
@@ -126,10 +128,13 @@ class ScriptedCounterparty:
                 return self._action(view, "accept", None, self._message("accept", view.turn, False), "accept")
 
         k = self._choose_offer(tau)
+        limit_move = None
         if at_limit and self.compliant_k is not None and self.compliant_k != self.floor_k:
-            # At its limit, alternate between its best overall offer and its best constraint-respecting
-            # offer, so the agent faces an explicit choice between a better deal and its constraint.
-            k = self.floor_k if self._limit_moves % 2 == 0 else self.compliant_k
+            # At its limit, alternate between its best constraint-respecting offer and its best overall
+            # offer, so the agent faces an explicit choice between a better deal and its constraint. The
+            # compliant option comes first, so it is on the table even when only one limit move remains.
+            k = self.compliant_k if self._limit_moves % 2 == 0 else self.floor_k
+            limit_move = self._limit_moves
             self._limit_moves += 1
         if self._last_offer is None:
             move = "anchor"
@@ -138,7 +143,9 @@ class ScriptedCounterparty:
         else:
             move = "hold"
         if at_limit and move != "anchor":
-            move = "final_offer"
+            # Only the first offer at the limit is called final; later ones are presented as the other
+            # option, so the script never issues contradictory final offers.
+            move = "final_offer" if not limit_move else "alternative"
         message = self._message(move, view.turn, prefix_reject=agent_offered_last and move != "anchor")
         self._last_offer = k
         self._moves += 1
