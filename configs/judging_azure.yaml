@@ -1,0 +1,11 @@
+name: judging-azure-v1
+# Judges and the simulated principal come from families with no model under test (enforced per episode).
+# Moved to Azure on 2026-09-15; GLM-5.3 and Kimi K3 outputs from earlier passes stay in each episode under
+# their own keys for judge-vs-judge comparison.
+judges: [kimi-k2.6, cohere-command-a-plus]
+primary_judge: kimi-k2.6
+principal_models: [kimi-k2.6]
+tasks: [disclosure, characterization, principal]
+spend_ceiling_usd: 25
+provider_concurrency: {azure: 12, default: 4}
+request_timeout_s: 300

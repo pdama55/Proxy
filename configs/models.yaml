@@ -207,6 +207,24 @@ models:
     token_param: max_tokens
     price_in_per_mtok: 2.0
     price_out_per_mtok: 6.0
+  # ---- Judges and simulated principal on Azure (families with no model under test) ----
+  kimi-k2.6:
+    provider: azure
+    model: Kimi-K2.6
+    family: moonshot
+    tier: frontier
+    open_weight: true
+    price_in_per_mtok: 1.0
+    price_out_per_mtok: 4.0
+    notes: Primary judge and principal simulator from 2026-09-15 (OpenRouter judges ran out of credit).
+  cohere-command-a-plus:
+    provider: azure
+    model: Cohere-command-a-plus-05-2026
+    family: cohere
+    tier: frontier
+    price_in_per_mtok: 3.0
+    price_out_per_mtok: 12.0
+    notes: Second judge.
   # Primary judge and simulated principal. Open weights from a lab with no model under test, so judge
   # outputs are reproducible after release and there is no self-preference path to any agent.
   glm-5.3:
