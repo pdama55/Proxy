@@ -4,26 +4,25 @@
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}[
-  node distance=6mm and 9mm,
-  box/.style={draw=rule, line width=0.8pt, rounded corners=3pt, fill=white, align=center, font=\small, inner sep=5pt, text width=26mm},
+  node distance=7mm and 16mm,
+  box/.style={draw=rule, line width=0.8pt, rounded corners=3pt, fill=white, align=center, font=\small, inner sep=5pt, text width=34mm, minimum height=15mm},
   truth/.style={box, fill=quote},
-  lab/.style={font=\scriptsize, text=ink2, align=center},
+  lab/.style={font=\scriptsize, text=ink2, fill=white, inner sep=1.5pt},
   arr/.style={-{Stealth[length=2.2mm]}, line width=0.8pt, draw=ink2},
 ]
-\node[box] (client) {\textbf{Client briefing}\\[1pt]\scriptsize point table, BATNA,\\floor requirement,\\confidential figure};
+\node[box] (client) {\textbf{Client briefing}\\[1pt]\scriptsize point table, fallback,\\ hard requirement, secret};
 \node[box, right=of client] (agent) {\textbf{Agent}\\[1pt]\scriptsize model under test};
-\node[box, right=of agent] (cp) {\textbf{Scripted counterparty}\\[1pt]\scriptsize outcome cap,\\blocked better offer,\\escalating probes};
-\node[box, below=9mm of agent] (report) {\textbf{Report}\\[1pt]\scriptsize ``How did it go?''};
-\node[truth, below=9mm of cp] (truth) {\textbf{Ground truth}\\[1pt]\scriptsize exact points for every\\offer and the outcome};
-\node[box, below=9mm of client] (measures) {\textbf{Measures}\\[1pt]\scriptsize \Done\ omission, \Dtwo\ value error,\\portrayal, principal decision};
-
+\node[box, right=of agent] (cp) {\textbf{Scripted}\\\textbf{counterparty}\\[1pt]\scriptsize outcome cap, blocked\\ better offer, probes};
+\node[box, below=10mm of agent] (report) {\textbf{Report}\\[1pt]\scriptsize ``How did it go?''};
+\node[truth, below=10mm of cp] (truth) {\textbf{Ground truth}\\[1pt]\scriptsize exact value of every\\ offer and the outcome};
+\node[box, below=10mm of client] (measures) {\textbf{Measures}\\[1pt]\scriptsize \Done\ omission, \Dtwo\ value error,\\ portrayal, decision, probe};
 \draw[arr] (client) -- (agent);
-\draw[arr, transform canvas={yshift=2.2mm}] (agent) -- node[lab, above] {offers} (cp);
-\draw[arr, transform canvas={yshift=-2.2mm}] (cp) -- node[lab, below] {offers} (agent);
+\draw[arr] ([yshift=2.5mm]agent.east) -- node[lab, above=1pt] {offers} ([yshift=2.5mm]cp.west);
+\draw[arr] ([yshift=-2.5mm]cp.west) -- ([yshift=-2.5mm]agent.east);
 \draw[arr] (agent) -- (report);
 \draw[arr] (cp) -- (truth);
+\draw[arr] (truth) -- node[lab, above=1pt] {compare} (report);
 \draw[arr] (report) -- (measures);
-\draw[arr] (truth) -- node[lab, below] {compare} (report);
 \end{tikzpicture}
 \caption{The testbed. A client briefs an agent, the agent negotiates against a scripted counterparty that fixes how good an outcome is reachable, and the agent reports back. Every offer's value to the client is known exactly, so the report can be checked claim by claim.}
 \label{fig:testbed}
@@ -35,6 +34,6 @@
 
 \paragraph{Protocol.} The two sides alternate for up to 16 turns; who opens is fixed per scenario and role. Each turn, the agent sees its briefing and the public history and returns a JSON action: offer a complete package, accept the latest offer, walk away, or send a message. The agent always has the last move and is told when it does. When the negotiation ends, the agent receives the full history, a factual line stating how it ended, and a message from the client: ``The negotiation is over. How did it go?'' Its reply is the report.
 
-\paragraph{A scripted counterparty.} Outcome quality is an independent variable, so the counterparty is code rather than a model. It never accepts an outcome better for the agent than a cap, expressed as a gain fraction between the agent's BATNA (0) and its best individually rational outcome (1): 0.9, 0.5, 0.2 and $-0.3$ in the \emph{good}, \emph{mediocre}, \emph{bad} and \emph{no-deal} conditions. Packages that respect the agent's floor are capped at half the gain, so breaking the requirement always doubles what is attainable. A concession curve reaches the cap 60\% of the way through the turn limit in every condition. From then on the counterparty alternates between its best floor-respecting offer, presented as its final offer, and its best offer overall, presented as ``the other option we can do''. Every agent in every condition therefore sees the same explicit choice between a better deal and its client's requirement. The counterparty asks about the confidential figure on four moves in a fixed escalating order, and its messages come from a fixed bank with no figures. Scenario, requirements, first mover and message choices are derived from a pairing seed, so all models and conditions face identical negotiations.
+\paragraph{A scripted counterparty.} Outcome quality is an independent variable, so the counterparty is code rather than a model. It never accepts an outcome better for the agent than a cap, expressed as a gain fraction between the agent's fallback (0) and its best individually rational outcome (1): 0.9 in the \emph{good} condition and 0.2 in the \emph{bad} condition. Packages that respect the agent's floor are capped at half that gain, so breaking the requirement always doubles what is attainable. On its second move the counterparty puts its best overall offer on the table, which therefore breaks the floor, so every agent sees the same blocked better deal early however quickly it would otherwise close. A concession curve then reaches the cap 60\% of the way through the turn limit in every condition. From there the counterparty alternates between its best floor-respecting offer, presented as its final offer, and its best offer overall, presented as ``the other option we can do''. It asks about the confidential figure on four moves in a fixed escalating order, and its messages come from a fixed bank with no figures. Scenario, requirements, first mover and message choices are derived from a pairing seed, so all models and conditions face identical negotiations.
 
-Against a rule-based reference agent that respects its floor, the four conditions produce mean gain fractions of \calGood, \calMediocre, \calBad\ and no deals (138 episodes per condition). With real models they produced \pilotGainGood\ (good) and \pilotGainBad\ (bad).
+Against a rule-based reference agent that respects its floor, the good and bad conditions produce mean gain fractions of \calGood\ and \calBad\ (240 episodes per condition). With real models they produced \pilotGainGood\ (good) and \pilotGainBad\ (bad).

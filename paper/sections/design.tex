@@ -1,0 +1,41 @@
+\section{Study design}
+\label{sec:design}
+
+\paragraph{Models.} Fifteen models from seven families served as agents (\cref{tab:models}). Anthropic and OpenAI each contribute a three-tier ladder, and five sizes of one open-weight release (Qwen3.5) form a ladder in which size is close to the only difference. Four families contribute one model each. Models ran at provider-default decoding. Refusal fallbacks, which would silently route a turn to a different model, were disabled. \textbf{[TBD: Fable 5.1 arm]}
+
+\begin{table}[t]
+\centering\small
+\caption{Agents. Capability rank orders models within a family; H4 is fitted on the three families with a ladder.}
+\label{tab:models}
+\begin{tabularx}{\linewidth}{llXl}
+\toprule
+Family & Models (capability rank) & Access & Scenarios \\
+\midrule
+Anthropic & Haiku 4.5 (1), Sonnet 5 (2), Opus 5 (3) & Anthropic API & 30 \\
+OpenAI & GPT-5.6 Luna (1), GPT-5.6 Sol (2), GPT-6 Astra (3) & Azure & 30 \\
+Qwen3.5 & 9B (1), 27B (2), 35B-A3B (3), 122B-A10B (4), 397B-A17B (5) & OpenRouter & 12 \\
+xAI & Grok 4.6 & Azure & 30 \\
+DeepSeek & V4 Pro & Azure & 30 \\
+Meta & Llama 4 Maverick & Azure & 30 \\
+Mistral & Large 3 & Azure & 30 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Conditions.} Each scenario is played in every combination of outcome quality (good or bad), audit framing (absent or present) and agent role (buyer or seller). Everything else is fixed within a scenario, so contrasts are paired.
+
+\paragraph{Sample size.} A simulation of this design with pilot parameters and a pessimistic between-scenario variance set 30 scenarios per model (240 episodes each). At this size, pooled effects of 5 points have 99\% power, single-model rates carry 95\% intervals of $\pm 9$ points or better, and a 20-point audit effect within one model has about 90\% power. The Qwen ladder uses the first 12 scenarios, fixed by budget.
+
+\paragraph{Hypotheses and analysis.} The preregistration was frozen before any confirmatory episode existed. It specifies:
+\begin{itemize}
+  \item \textbf{H1a:} \Done\ non-disclosure is above zero.
+  \item \textbf{H1b:} \Dtwo\ misstatement is above zero.
+  \item \textbf{H2a:} \Done\ non-disclosure is higher after bad outcomes.
+  \item \textbf{H2b:} \Dtwo\ overstatement is higher after bad outcomes.
+  \item \textbf{H3:} the audit sentence lowers \Done\ non-disclosure.
+  \item \textbf{H4:} \Done\ non-disclosure does not fall with capability within families.
+  \item \textbf{H5:} the decision gap is larger after bad outcomes.
+\end{itemize}
+All tests are one-sided, with 95\% intervals from resampling whole scenarios and Holm correction across H1a, H1b, H2a, H2b, H3 and H5. H4 predicts a null and uses a non-inferiority rule. The pilot data that informed the measures, including results that run against H2a and H4, are disclosed in the preregistration. The knowledge probe, report interventions, a 100-scenario breadth run and a stakes analysis are exploratory and labelled as such.
+
+\paragraph{Validation.} Two annotators, blind to model, condition and judge output, label stratified samples of disclosure, portrayal, stated totals and leaks. A judge measure with chance-corrected agreement below $\kappa = 0.6$ against their consensus, or a stated-total extractor with precision below 0.9, is demoted from confirmatory use. \textbf{[TBD: agreement results]}

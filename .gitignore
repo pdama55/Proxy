@@ -22,3 +22,8 @@ venv/
 
 # iCloud exclusion (folders ending in .nosync are not synced)
 *.nosync
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.bbl
+paper/*.blg

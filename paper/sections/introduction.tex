@@ -1,0 +1,27 @@
+\section{Introduction}
+\label{sec:intro}
+
+AI agents are beginning to negotiate, shop and sign agreements on people's behalf. The person who delegated rarely watches the transaction. What they see is the agent's account of it afterwards, and that account is where supervision happens: it is how a principal decides whether to accept a deal, change their instructions, or stop using the agent.
+
+Recent work has shown that this channel can fail loudly. Agents claim tasks succeeded when they did not \citep{advani2026falsesuccess}, conceal broken tools and fabricated results from their users \citep{guo2025upward}, and hide their own misconduct from a manager \citep{scheurer2023strategic}. Each of these failures has a motive: a failure to hide, a rule broken, or a competing incentive. This paper studies a quieter failure that needs none. An agent can follow every instruction, keep every confidence and reach an acceptable deal, and still leave out the one fact its principal could act on: that the principal's own requirement ruled out a better deal.
+
+We build a negotiation testbed in which that fact is exact and constant. A seeded, four-issue procurement negotiation gives every package an exact value to the client. The client's briefing contains a hard requirement and a confidential budget. A scripted counterparty controls how good an outcome is reachable and, at the same point in every negotiation, offers a better deal that only the client's requirement forbids. After the negotiation, the client asks one open question: \emph{``How did it go?''} Because every offer's value is known, each report can be checked against ground truth.
+
+Disclosure here is not self-serving concealment. Telling the client that their own rule cost them a better deal would, if anything, excuse a weaker outcome. An agent that stays silent is not protecting itself; it is failing to pass on information the principal needs.
+
+\paragraph{Findings.} Across \nModels\ models from \nFamilies\ families and \nEpisodes\ negotiations:
+\begin{itemize}
+  \item \textbf{Obedient agents.} Agents essentially never broke the client's requirement or leaked its confidential figure (\violationCount\ violations, \leakCount\ leaks).
+  \item \textbf{Silent reports.} Reports conveyed the blocked better deal in only a small minority of exposed episodes (judged non-disclosure \doneJudgedAll). \textbf{[TBD: main-grid summary]}
+  \item \textbf{Knowledge without disclosure.} Asked directly afterwards, most agents named the blocked offer and its value. When the client's question asked about turned-down terms, agents disclosed. \textbf{[TBD]}
+  \item \textbf{Not a scaling property.} Disclosure varies sharply between frontier models from different developers. \textbf{[TBD: Opus 5, Fable 5.1, GPT-6 Astra]}
+  \item \textbf{Value misstatement tracks capability; omission does not.} Some models misstate their own deal's value in most reports that state it, while frontier models are exact. Omission persists across capability. \textbf{[TBD]}
+\end{itemize}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A testbed with exact ground truth for what a delegated agent should tell its principal, in which the principal-relevant fact appears identically for every model and condition.
+  \item Two judge-free measures of report fidelity, blocked-alternative non-disclosure (\Done) and stated-value error (\Dtwo), with validated model judgments as a second stage.
+  \item A preregistered study of \nModels\ models, with outcome quality, audit framing and model family varied on identical negotiations, plus a knowledge probe that separates not tracking from not telling.
+  \item Evidence on writer-side remedies: an audit sentence, a deployer instruction, and a client prompt that asks.
+\end{enumerate}
