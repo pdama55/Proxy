@@ -1,9 +1,9 @@
-name: main-v1
+name: main-v2
 # Confirmatory analysis of the main grid. The LLM-counterparty arm is picked up by the exploratory module
 # when its run is listed here, and is never pooled with scripted runs.
-runs: [main-v1, llm-counterparty-v1]
-primary_judge: glm-5.3
-principal_model: glm-5.3
+runs: [main-v2, main-v2-qwen, llm-counterparty-v1]
+primary_judge: kimi-k2.6
+principal_model: kimi-k2.6
 bootstrap: 2000
 exploratory_bootstrap: 1000
 suspect_parse_failure_rate: 0.05
