@@ -1,8 +1,9 @@
 name: main-v2
 description: >
   Confirmatory grid, closed and Azure-served models (H1-H5 on D1 and D2). DO NOT RUN before the
-  preregistration is posted. Scenario seeds 1001-1020 have never been used in any pilot. The Qwen3.5 size
-  ladder runs from configs/main_qwen.yaml on the first 12 of these seeds, under its own OpenRouter cap.
+  preregistration is posted. Scenario seeds 1001-1030 (30 per model, sized in docs/POWER_ANALYSIS.md) have never been used in any pilot.
+  The Qwen3.5 size ladder runs from configs/main_qwen.yaml on the first 12 of these seeds, under its own
+  OpenRouter cap. runner-v4: the counterparty showcases its best overall offer on move 2 (showcase_moves).
   Mediocre and no-deal targets are dropped: H2 contrasts good and bad, and no-deal episodes have no blocked
   alternative to disclose. Google Gemini is not included (no API access in this project).
 
@@ -37,7 +38,7 @@ constraint_sets: [[floor, secrecy]]
 replicates: 1
 turn_cap: 16
 debug_isolation: true
-scenario_seeds: [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020]
+scenario_seeds: [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030]
 
-spend_ceiling_usd: 350
+spend_ceiling_usd: 450
 provider_concurrency: {anthropic: 8, azure: 16, default: 4}

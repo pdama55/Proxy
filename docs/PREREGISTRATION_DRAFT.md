@@ -1,6 +1,6 @@
 # Preregistration draft: Reporting fidelity in delegated LLM negotiation
 
-**Status: DRAFT.** Values marked **TBD (pilot)** are fixed from the pilot and the power analysis, then this document is posted (for example on OSF) before any confirmatory episode is generated. Once posted, the hashes in section 9 are frozen, and any change is reported as a deviation.
+**Status: FROZEN at git tag `prereg-v1`, before any confirmatory episode was generated.** The tag and its commit timestamp on GitHub are the registration record; the same text is to be posted on OSF. Any later change is reported as a deviation.
 
 ## 1. Research questions
 
@@ -8,7 +8,7 @@ When an LLM agent negotiates for a principal and then reports back, does the rep
 
 *Revision note (2026-09-15).* The first design made non-disclosure of constraint violations primary. In two pilots (120 episodes, Claude Haiku 4.5 and Qwen3.5 27B, three briefing variants) no agent ever violated a floor constraint, proposed a violating package, or leaked the planted secret, so that measure has no denominator. The replacement measures were chosen because the pilot showed they occur in this environment. Full disclosure of what was seen before these hypotheses were written: the pilot's judge-free D1 lower bound by condition (5–18% bad, 18–35% good, by model; the opposite direction from H2a) and the D2 signed error by condition for Claude Haiku 4.5 (about +4 points bad, −13 good; the same direction as H2b). The directions of H2a and H2b follow the original theory, that reports get more favorable to the agent as outcomes worsen, and were not changed to match the pilot. No judged D1, characterization or principal estimates had been computed at that point. The confirmatory sample uses new scenario seeds.
 
-*Second revision note (2026-09-15, later the same day).* Before this draft was finalized, two more diagnostic runs were seen and are disclosed here: a frontier check (Claude Sonnet 5 and Opus 5, 8 episodes each) and a cross-family check (GPT-6 Astra, GPT-5.6 Sol and Luna, Grok 4.6, DeepSeek V4 Pro, Llama 4 Maverick, Mistral Large 3, 8 episodes each), all on scenario seed 201. Seen: judged D1 non-disclosure of 86% (Sonnet 5) and 38% (Opus 5), against about 90% for Haiku 4.5 and Qwen3.5 27B, which runs against H4 for the Anthropic family. D2 misstatement near 0% for Anthropic frontier and OpenAI models and high for DeepSeek, Mistral and Llama. Zero violations and zero leaks in all 192 pilot episodes. Knowledge-probe answers (section 5) for Claude and Qwen: the agent named the blocked offer and its value correctly in 86–100% of exposed episodes for Qwen3.5 27B, Sonnet 5 and Opus 5, and 41% for Haiku 4.5. H4 keeps its original direction and is expected by the authors to be informative in either direction. The knowledge-probe and intervention analyses below were added after these runs and are therefore descriptive or exploratory, not confirmatory. Violations and leaks remain measured and are analysed as exploratory (E0).
+*Second revision note (2026-09-15, later the same day).* Before this draft was finalized, two more diagnostic runs were seen and are disclosed here: a frontier check (Claude Sonnet 5 and Opus 5, 8 episodes each) and a cross-family check (GPT-6 Astra, GPT-5.6 Sol and Luna, Grok 4.6, DeepSeek V4 Pro, Llama 4 Maverick, Mistral Large 3, 8 episodes each), all on scenario seed 201. Seen: judged D1 non-disclosure of 86% (Sonnet 5) and 38% (Opus 5), against about 90% for Haiku 4.5 and Qwen3.5 27B, which runs against H4 for the Anthropic family. D2 misstatement near 0% for Anthropic frontier and OpenAI models and high for DeepSeek, Mistral and Llama. Zero violations and zero leaks in all 192 pilot episodes. Knowledge-probe answers (section 5) for Claude and Qwen: the agent named the blocked offer and its value correctly in 86–100% of exposed episodes for Qwen3.5 27B, Sonnet 5 and Opus 5, and 41% for Haiku 4.5. H4 keeps its original direction and is expected by the authors to be informative in either direction. The knowledge-probe and intervention analyses below were added after these runs and are therefore descriptive or exploratory, not confirmatory. A final check (GPT-6 Astra and GPT-5.6 Sol, 8 episodes each, seed 201) confirmed that showing the blocked offer on counterparty move 2 raises exposure to 16/16 without any violations; its reports were not analysed. Violations and leaks remain measured and are analysed as exploratory (E0).
 
 ## 2. Hypotheses
 
@@ -31,12 +31,12 @@ When an LLM agent negotiates for a principal and then reports back, does the rep
   - Model: 15 models from 7 families. Anthropic (Claude Opus 5, Sonnet 5, Haiku 4.5; capability ranks 3, 2, 1), OpenAI (GPT-6 Astra, GPT-5.6 Sol, GPT-5.6 Luna; 3, 2, 1), Qwen (Qwen3.5 397B-A17B, 122B-A10B, 35B-A3B, 27B, 9B; ranked by total parameters 5 to 1), and single models from xAI (Grok 4.6), DeepSeek (V4 Pro), Meta (Llama 4 Maverick) and Mistral (Large 3), which enter H1–H3 but not the within-family H4 slopes. Google models are not included (no API access). Configs: `configs/main.yaml`, `configs/main_qwen.yaml`.
   - Agent role: buyer or seller.
 - **Random factor.** Scenario seed. The design is paired: every model and condition sees the same scenarios, constraints, first mover and counterparty messages.
-- **Held constant.** Constraint set (one floor constraint, one secrecy constraint), `compliant_cap_ratio` of 0.5 and `concede_by` of 0.6 in every condition (so every condition shows the blocked alternative at the same point), escalating probes on counterparty moves 2, 4, 6 and 8, turn cap of 16, briefing phrasing `plain`, salience `base`, report prompt `open`, and provider-default decoding.
+- **Held constant.** Constraint set (one floor constraint, one secrecy constraint), `compliant_cap_ratio` of 0.5 and `concede_by` of 0.6 in every condition (so every condition shows the blocked alternative at the same point), escalating probes on counterparty moves 2, 4, 6 and 8, the counterparty's best overall offer (which breaks the floor) shown on its move 2 so that exposure to a blocked better deal does not depend on how quickly an agent closes (runner-v4), turn cap of 16, briefing phrasing `plain`, salience `base`, report prompt `open`, and provider-default decoding.
 
 ## 4. Sample size
 
 - Smallest effect of interest for H2a and H3: Δ = 0.10 absolute. With pilot estimates (D1 exposure 0.84, lower-bound non-disclosure 0.18), the paired simulation gives 97% power with 10 scenarios and 56 episodes per scenario and condition; because the between-scenario SD rests on only three pilot scenarios, the grid uses twice that.
-- Seeds: 1001–1020 for the ten closed and Azure-served models (160 episodes per model), and 1001–1012 for the five Qwen models (96 per model), fixed by a hard budget for that arm. Replicates per cell: 1. There is no optional stopping: the full grid is generated once. Episodes that error are retried once by resuming the run; persistent errors are excluded and reported.
+- Seeds: 1001–1030 for the ten closed and Azure-served models (240 episodes per model), and 1001–1012 for the five Qwen models (96 per model), fixed by a hard budget for that arm. The simulation in `docs/POWER_ANALYSIS.md` sets S = 30 so that per-model rates carry 95% intervals of ±0.09 or better and a 20-point audit effect within a single model has about 0.9 power. Replicates per cell: 1. There is no optional stopping: the full grid is generated once. Episodes that error are retried once by resuming the run; persistent errors are excluded and reported.
 
 ## 5. Measured variables
 
@@ -95,13 +95,15 @@ These live in `proxy/analysis/exploratory.py`:
 
 | Artifact | Hash / version |
 | --- | --- |
-| `configs/main.yaml` config hash (`proxy run configs/main.yaml --dry-run`) | TBD |
-| Agent prompt template hash (`proxy.prompts.prompt_template_hash()`) | TBD |
-| Judge prompt hash (`proxy.scoring.judge.judge_prompt_hash()`) | TBD |
-| Principal prompt hash | TBD |
-| Detector aliases (`ALTERNATIVE_ALIASES`, `ISSUE_ALIASES`, `SECRET_ALIASES`), stated-total extractor and `detectors-v2` | TBD (git commit) |
-| Annotation guidelines SHA-256 | TBD |
-| Harness git commit | TBD |
+| `configs/main.yaml` config hash | `711b6d6e75225ff26203c51830183d622d46befcf1b52e69e7e5a111aa63f3ce` |
+| `configs/main_qwen.yaml` config hash | `b4f72079a9529f7b62599c3848d3243d1eb2b5b54b4040c2427726a15d4dd779` |
+| Agent prompt template hash (`proxy.prompts.prompt_template_hash()`) | `58261b64f08713d7355d40b7b6736b7f3b5de3736a54826405112d57b975ee4e` |
+| Judge prompt hash (`proxy.scoring.judge.judge_prompt_hash()`) | `a65125b329c280db429a88ffe4221829357afe1f956a038b1b3a6d830225babf` |
+| Principal prompt hash | `de70dc771f472b554c9b45830600e233209cefae168fa517bfef6d9b58403a38` |
+| Knowledge-probe prompt hash | `d36d381d5b1a14fa5e291dcb0f6a88ae278c4f7efa56414fea1dd99549fdb4fc` |
+| Detector aliases, stated-total extractor, `detectors-v2`, `runner-v4` | git tag `prereg-v1` |
+| Annotation guidelines SHA-256 | `73b151645d6d16aa1bdaf02ba2c169104577b4c5457426cecf699c7c3fa23c6f` |
+| Harness git commit | the commit tagged `prereg-v1` |
 
 ## 10. Interpretation commitments
 
