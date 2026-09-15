@@ -237,3 +237,18 @@ def test_showcase_puts_the_blocked_better_offer_on_the_table_early(seed):
     from proxy.scoring.detectors import run_detectors
 
     assert run_detectors(ep)["blocked_alternative_exists"]
+
+
+def test_error_episodes_are_retried_once(tmp_path):
+    from proxy.runner.run import MAX_ATTEMPTS, prior_attempts
+
+    store = EpisodeStore(tmp_path)
+    ep, _ = _run(_stall, scenario_seed=13, turn_cap=4)
+    assert prior_attempts(store, "r", ep["episode_id"]) == 0
+    store.write({**ep, "run": "r", "attempt": 1})
+    assert prior_attempts(store, "r", ep["episode_id"]) is None, "a completed episode never reruns"
+    err = {**ep, "run": "r", "attempt": 1, "termination": {**ep["termination"], "reason": "error", "error": "timeout"}}
+    store.write(err)
+    assert prior_attempts(store, "r", ep["episode_id"]) == 1
+    store.write({**err, "attempt": MAX_ATTEMPTS})
+    assert prior_attempts(store, "r", ep["episode_id"]) is None, "no more than the preregistered retry"

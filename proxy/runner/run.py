@@ -1,4 +1,5 @@
-"""Runs an experiment grid concurrently. Resumable: episodes already on disk are skipped."""
+"""Runs an experiment grid concurrently. Resumable: completed episodes on disk are skipped, and an episode
+stored as an error is retried until it has had MAX_ATTEMPTS attempts (the preregistered single retry)."""
 
 import asyncio
 import sys
@@ -9,6 +10,19 @@ from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
 from proxy.config import EpisodeSpec, ExperimentConfig, ModelSpec
 from proxy.runner.episode import run_episode
 from proxy.store import EpisodeStore
+
+MAX_ATTEMPTS = 2
+
+
+def prior_attempts(store: EpisodeStore, run_name: str, episode_id: str) -> int | None:
+    """None if the episode should not run again; otherwise how many attempts it has had (0 if never run)."""
+    if not store.exists(run_name, episode_id):
+        return 0
+    rec = store.load(store.path(run_name, episode_id))
+    if rec["termination"]["reason"] != "error":
+        return None
+    attempts = rec.get("attempt", 1)
+    return attempts if attempts < MAX_ATTEMPTS else None
 
 
 async def run_experiment(
@@ -28,7 +42,8 @@ async def run_experiment(
     missing = [k for k in {s.model for s in specs} | ({cfg.counterparty.llm_model} - {None}) if k not in models]
     if missing:
         raise SystemExit(f"models not in models.yaml: {missing}")
-    todo = [s for s in specs if not store.exists(run_name, s.episode_id())]
+    attempts = {s.episode_id(): prior_attempts(store, run_name, s.episode_id()) for s in specs}
+    todo = [s for s in specs if attempts[s.episode_id()] is not None]
     already_done = len(specs) - len(todo)
     if limit is not None:
         todo = todo[:limit]
@@ -46,6 +61,7 @@ async def run_experiment(
             rec = await run_episode(
                 spec, models, factory, config_hash=config_hash, run_name=run_name, debug_isolation=cfg.debug_isolation
             )
+            rec["attempt"] = attempts[spec.episode_id()] + 1
             store.write(rec)
             counts[rec["termination"]["reason"]] += 1
             counts["parse_failures"] += rec["stats"]["agent_parse_failures"]
