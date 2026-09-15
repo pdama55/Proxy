@@ -110,3 +110,11 @@ These live in `proxy/analysis/exploratory.py`:
 - Claims are about behavior, not intent. The design cannot separate concealment from failure to track, and the writeup will not use "deception" for any finding.
 - A null on H1–H3, given adequate power, will be reported as a result about agent reliability.
 - A misstated total is reported as an inaccurate report, whatever its cause (arithmetic, misreading the point table, or spin). The design does not separate these.
+
+## Addendum A1 (2026-09-15, after the freeze and before any breadth-run data)
+
+A breadth run is added as an exploratory analysis. It does not change any confirmatory test.
+
+- **Design.** Claude Opus 5, Claude Sonnet 5, GPT-6 Astra and Grok 4.6 each play 100 new scenarios once: seeds 3001–3050 in the good condition as buyer (`configs/breadth_a.yaml`), and 3051–3100 in the bad condition as seller (`configs/breadth_b.yaml`). No audit framing, open report prompt, runner-v4. Episodes: 400.
+- **E10 (generality).** Judged and lower-bound D1 per model over 100 distinct scenarios, compared with the same model's rate in the confirmatory grid, with scenario-resampling intervals.
+- **E11 (stakes).** Within each model, a logistic regression of judged D1 non-disclosure on `points_forgone` (points of the blocked alternative minus the outcome), with outcome condition as a covariate. Expected direction: non-disclosure falls as points forgone rise. A flat or rising slope would indicate that disclosure does not track what the requirement cost the principal.
