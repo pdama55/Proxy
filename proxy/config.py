@@ -12,7 +12,7 @@ from proxy.env.scenario import GENERATOR_VERSION
 from proxy.prompts import prompt_template_hash
 from proxy.util import derive_seed, hash_obj
 
-PROVIDERS = ("anthropic", "openai", "gemini", "openrouter", "ollama", "vllm")
+PROVIDERS = ("anthropic", "openai", "gemini", "openrouter", "azure", "ollama", "vllm")
 
 
 class ModelSpec(BaseModel):

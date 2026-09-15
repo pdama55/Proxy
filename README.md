@@ -19,6 +19,7 @@ API keys go in a `.env` file at the repo root (gitignored, loaded automatically)
 | `ANTHROPIC_API_KEY` | Claude models |
 | `OPENAI_API_KEY` | GPT models |
 | `GEMINI_API_KEY` | Gemini models |
+| `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` | models deployed in an Azure OpenAI / Foundry resource (`provider: azure`, `model` = deployment name) |
 | `OPENROUTER_API_KEY` | open-weight models, the LLM counterparty, judges and principal simulator; or every model with `--via-openrouter` |
 
 ## Workflow

@@ -1,4 +1,9 @@
-"""OpenAI Chat Completions and OpenAI-compatible servers (OpenRouter, Ollama, vLLM)."""
+"""OpenAI Chat Completions and OpenAI-compatible servers (OpenRouter, Azure, Ollama, vLLM).
+
+Azure uses the resource's OpenAI-compatible v1 endpoint (AZURE_OPENAI_ENDPOINT, e.g.
+https://<resource>.openai.azure.com), which serves Azure OpenAI and Foundry models. On Azure, a model
+spec's `model` is the deployment name.
+"""
 
 import os
 
@@ -10,9 +15,18 @@ from proxy.runner.types import Completion
 ENDPOINTS = {
     "openai": (None, "OPENAI_API_KEY"),
     "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
+    "azure": (None, "AZURE_OPENAI_API_KEY"),
     "ollama": (os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1"), None),
     "vllm": (os.environ.get("VLLM_BASE_URL", "http://localhost:8000/v1"), "VLLM_API_KEY"),
 }
+
+
+def azure_base_url(endpoint: str | None) -> str | None:
+    """Resource endpoint -> the OpenAI-compatible v1 base URL."""
+    if not endpoint:
+        return None
+    endpoint = endpoint.rstrip("/")
+    return endpoint if endpoint.endswith("/openai/v1") else endpoint + "/openai/v1/"
 
 
 class OpenAICompatAdapter(Adapter):
@@ -22,8 +36,12 @@ class OpenAICompatAdapter(Adapter):
         super().__init__(*args, **kwargs)
         base_url, key_env = ENDPOINTS[self.spec.provider]
         api_key = os.environ.get(key_env) if key_env else "ollama"
-        if self.spec.provider in ("openai", "openrouter") and not api_key:
+        if self.spec.provider in ("openai", "openrouter", "azure") and not api_key:
             raise AdapterError(f"{self.spec.key}: {key_env} is not set")
+        if self.spec.provider == "azure":
+            base_url = azure_base_url(os.environ.get("AZURE_OPENAI_ENDPOINT"))
+            if not base_url:
+                raise AdapterError(f"{self.spec.key}: AZURE_OPENAI_ENDPOINT is not set")
         self.client = openai.AsyncOpenAI(
             api_key=api_key or "EMPTY", base_url=base_url, timeout=self.timeout_s, max_retries=5
         )
@@ -33,7 +51,7 @@ class OpenAICompatAdapter(Adapter):
         extra_body = dict(params.pop("extra_body", {}) or {})
         if self.spec.provider == "openrouter" and self.spec.openrouter_provider:
             extra_body["provider"] = self.spec.openrouter_provider
-        token_arg = "max_completion_tokens" if self.spec.provider == "openai" else "max_tokens"
+        token_arg = "max_completion_tokens" if self.spec.provider in ("openai", "azure") else "max_tokens"
         kwargs = {
             "model": self.spec.model,
             "messages": [{"role": "system", "content": system}, *messages],
