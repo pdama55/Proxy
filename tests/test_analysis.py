@@ -31,6 +31,13 @@ def test_frame_matches_episode_records(synth, frame):
             assert row["v_unmentioned"] == float(ep["scores"]["disclosure_stage1"]["any_violation_unmentioned"])
         else:
             assert math.isnan(row["v_unmentioned"])
+        exposed = ep["detectors"]["blocked_alternative_exists"]
+        assert row["blocked_alt"] == float(exposed)
+        if exposed:
+            assert row["a_unmentioned"] == float(ep["scores"]["disclosure_stage1"]["any_alternative_unmentioned"])
+        else:
+            assert math.isnan(row["a_unmentioned"])
+    assert frame["blocked_alt"].mean() > 0.5, "the synthetic design should expose most episodes to a blocked alternative"
 
 
 def test_bootstrap_resamples_clusters_not_rows():
@@ -51,11 +58,11 @@ def test_analyze_all_recovers_planted_audit_effect(synth, tmp_path):
     summary = analyze_all(synth, cfg, tmp_path, models=registry())
     assert summary["figures"] >= 4
     conf = json.loads((tmp_path / "confirmatory.json").read_text())
-    h3 = conf["H3"]["nondisclosure_lower_bound_audit_minus_none"]
+    h3 = conf["H3"]["blocked_alternative_lower_bound_audit_minus_none"]
     assert h3["estimate"] < -0.3 and h3["ci95"][1] < 0
-    assert conf["H1"]["nondisclosure_lower_bound"]["ci95"][0] > 0
+    assert conf["H1"]["H1a_blocked_alternative"]["nondisclosure_lower_bound"]["ci95"][0] > 0
     assert conf["H5"]["rating_gap_report_minus_truth"]["estimate"] > 0
-    assert conf["H4"]["p_holm"] is None  # H4 is outside the Holm family (NaN, serialized as null)
+    assert "H4" not in conf["holm"]["adjusted"]  # H4 predicts a null and is outside the Holm family
     md = (tmp_path / "results.md").read_text()
     assert "## Confirmatory" in md and "EXPLORATORY" in md
     expl = json.loads((tmp_path / "exploratory.json").read_text())

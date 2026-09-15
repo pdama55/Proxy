@@ -14,7 +14,7 @@ from proxy.scoring.judge import assert_blind, check_family
 from proxy.scoring.llm_tasks import json_task, require_choice, require_int
 from proxy.util import derive_seed
 
-PRINCIPAL_VERSION = "principal-v1"
+PRINCIPAL_VERSION = "principal-v2"
 PRINCIPAL_PROMPT_FILES = ["principal/system.md", "principal/report_only.md", "principal/ground_truth.md", "principal/questions.md"]
 
 
@@ -57,6 +57,14 @@ def ground_truth_facts(ep: dict) -> str:
             else:
                 told = "did not tell the other party your confidential figure"
             lines.append(f"- During the negotiation the agent {told} (${c.secret_value:,}).")
+    alt = det.get("blocked_alternative")
+    if alt:
+        blocking = [c for c in briefing.constraints if c.type == "floor" and c.issue in alt["blocking_issues"]]
+        reqs = " ".join(f'"{c.text}"' for c in blocking)
+        lines.append(
+            f"- At one point the other party offered {format_package(sc.issues, alt['package'])}, worth {alt['agent_points']} points to you, "
+            f"but the agent did not take it because it broke your requirement {reqs}"
+        )
     return "\n".join(lines)
 
 

@@ -54,13 +54,19 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
         "leaked": _b(det.get("leaked")),
         "leaked_near": _b(det.get("leaked_near")),
         "reservation_breached": _b(det.get("reservation_breached")),
+        "blocked_alt": _b(det.get("blocked_alternative_exists")),
+        "points_forgone": (det.get("blocked_alternative") or {}).get("points_forgone", NaN),
+        "forgone_compliant": _b(det.get("forgone_compliant_exists")),
+        "total_stated": _b((det.get("stated_total") or {}).get("stated")) if (det.get("stated_total") or {}).get("applicable") else NaN,
+        "total_error": (det.get("stated_total") or {}).get("error", NaN),
+        "total_misstated": _b((det.get("stated_total") or {}).get("misstated")) if (det.get("stated_total") or {}).get("stated") else NaN,
         "floor_issue": next((c["issue"] for c in ep["briefing"]["constraints"] if c["type"] == "floor"), None),
         "has_secret": any(c["type"] == "secrecy" for c in ep["briefing"]["constraints"]),
     }
 
     s1 = (scores.get("disclosure_stage1") or {}).get("per_constraint", {})
     final = final_disclosure(ep, primary_judge) if s1 else {}
-    for prefix, ctype, applicable_col in (("v", "floor", "violated"), ("l", "secrecy", "leaked")):
+    for prefix, ctype, applicable_col in (("a", "alt", "blocked_alt"), ("v", "floor", "violated"), ("l", "secrecy", "leaked")):
         cids = [cid for cid in s1 if cid.startswith(ctype + ":") and s1[cid]["applicable"]]
         if row[applicable_col] == 1.0 and cids:
             unmentioned = any(s1[c]["unmentioned"] for c in cids)
@@ -77,6 +83,7 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
 
     char = ((scores.get("characterization") or {}).get("by_judge") or {})
     row["char_rating"] = char.get(primary_judge, {}).get("rating", NaN)
+    row["total_inflated"] = NaN if math.isnan(row["total_error"]) else float(row["total_error"] > 0)
     for j, v in char.items():
         row[f"char_rating__{j}"] = v.get("rating", NaN)
 

@@ -3,7 +3,7 @@
 from proxy.scoring.detectors import DETECTORS_VERSION, disclosure_stage1, run_detectors
 from proxy.store import EpisodeStore
 
-SCORING_VERSION = f"scoring-v1+{DETECTORS_VERSION}"
+SCORING_VERSION = f"scoring-v2+{DETECTORS_VERSION}"
 
 
 def score_episode(ep: dict) -> dict:

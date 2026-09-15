@@ -1,10 +1,12 @@
 """Simulation-based power analysis for the paired, scenario-clustered design (research plan section 6).
 
 Model: each scenario s has a random intercept u_s ~ N(0, sigma) on the logit of non-disclosure. In each
-outcome condition, each of n episodes violates with probability p_violate; a violating episode is
-undisclosed with probability logistic(logit(p0) + u_s + delta_logit * [bad]). The test is a paired t-test on
-per-scenario rates (bad minus good) across scenarios that have violations in both conditions, which respects
-both the clustering and the pairing.
+outcome condition, each of n episodes is exposed (a better deal was blocked by the principal's requirement,
+D1) with probability p_violate; an exposed episode is undisclosed with probability
+logistic(logit(p0) + u_s + delta_logit * [bad]). The test is a paired t-test on per-scenario rates (bad minus
+good) across scenarios that have exposure in both conditions, which respects both the clustering and the
+pairing. The parameter keeps its historical name p_violate; it is the exposure rate for whichever measure
+estimate_parameters is given.
 """
 
 import math
@@ -23,22 +25,27 @@ def expit(x):
     return 1 / (1 + np.exp(-x))
 
 
-def estimate_parameters(df: pd.DataFrame) -> dict:
-    """Pilot estimates: violation rate, lower-bound non-disclosure rate, and between-scenario SD on the logit."""
+# measure -> (exposure column, lower-bound non-disclosure column)
+MEASURES = {"D1": ("blocked_alt", "a_unmentioned"), "violation": ("violated", "v_unmentioned")}
+
+
+def estimate_parameters(df: pd.DataFrame, measure: str = "D1") -> dict:
+    """Pilot estimates: exposure rate, lower-bound non-disclosure rate, and between-scenario SD on the logit."""
+    exposed_col, rate_col = MEASURES[measure]
     main = df[(~df["error"]) & (df["scored"]) & (df["counterparty_kind"] == "scripted")]
-    violated = main.dropna(subset=["violated"])
-    v = main[(main["violated"] == 1.0)].dropna(subset=["v_unmentioned"])
-    p_violate = float(violated["violated"].mean()) if len(violated) else math.nan
-    p0 = float(v["v_unmentioned"].mean()) if len(v) else math.nan
+    violated = main.dropna(subset=[exposed_col])
+    v = main[(main[exposed_col] == 1.0)].dropna(subset=[rate_col])
+    p_violate = float(violated[exposed_col].mean()) if len(violated) else math.nan
+    p0 = float(v[rate_col].mean()) if len(v) else math.nan
     # Between-scenario SD of logit rates, shrunk toward zero by subtracting expected binomial noise.
     sigma = math.nan
     if len(v) and v["seed"].nunique() > 2:
-        g = v.groupby("seed")["v_unmentioned"].agg(["mean", "count"])
+        g = v.groupby("seed")[rate_col].agg(["mean", "count"])
         adj = g["mean"].clip(0.05, 0.95)
         between_var = float(np.var([logit(x) for x in adj], ddof=1))
         noise = float(np.mean(1 / (g["count"] * adj * (1 - adj))))
         sigma = math.sqrt(max(between_var - noise, 0.0))
-    return {"p_violate": p_violate, "p_nondisclosure": p0, "sigma_scenario": sigma, "violating_episodes": int(len(v)), "scenarios": int(main["seed"].nunique())}
+    return {"measure": measure, "p_violate": p_violate, "p_nondisclosure": p0, "sigma_scenario": sigma, "violating_episodes": int(len(v)), "scenarios": int(main["seed"].nunique())}
 
 
 def simulate_power(
