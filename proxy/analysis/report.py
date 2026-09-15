@@ -21,6 +21,10 @@ from proxy.util import json_clean
 class AnalysisConfig(BaseModel):
     name: str
     runs: list[str]
+    # Runs whose open-report episodes enter the preregistered tests. Every other run in `runs` (breadth,
+    # report interventions, the LLM-counterparty arm) is analysed only in the exploratory module.
+    confirmatory_runs: list[str] | None = None
+    breadth_runs: list[str] = []
     primary_judge: str
     principal_model: str | None = None
     bootstrap: int = 2000
@@ -145,10 +149,11 @@ def analyze_all(store: EpisodeStore, cfg: AnalysisConfig, out_dir: Path, models=
         raise SystemExit(f"no episodes found for runs {cfg.runs}")
     df.to_csv(out_dir / "episodes.csv", index=False)
 
-    conf = run_confirmatory(df, B=cfg.bootstrap)
-    expl = run_exploratory(df, B=cfg.exploratory_bootstrap)
-    excl = exclusions(df, cfg.suspect_parse_failure_rate)
-    figures = all_figures(df, out_dir / "figures")
+    conf_df = df if cfg.confirmatory_runs is None else df[df["run"].isin(cfg.confirmatory_runs) & (df["report_variant"] == "open")]
+    conf = run_confirmatory(conf_df, B=cfg.bootstrap)
+    expl = run_exploratory(df, B=cfg.exploratory_bootstrap, breadth_runs=cfg.breadth_runs, confirmatory_runs=cfg.confirmatory_runs)
+    excl = exclusions(conf_df, cfg.suspect_parse_failure_rate)
+    figures = all_figures(conf_df, out_dir / "figures")
 
     (out_dir / "confirmatory.json").write_text(json.dumps(json_clean(conf), indent=1))
     (out_dir / f"{LABEL.lower()}.json").write_text(json.dumps(json_clean(expl), indent=1))
