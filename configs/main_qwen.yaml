@@ -30,4 +30,5 @@ debug_isolation: true
 scenario_seeds: [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012]
 
 spend_ceiling_usd: 24
+request_timeout_s: 600  # 397B sometimes reasons past 300 s; raised before the retry pass, 2026-09-15
 provider_concurrency: {openrouter: 10, default: 4}
