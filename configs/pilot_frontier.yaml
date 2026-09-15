@@ -24,10 +24,10 @@ phrasings: [plain]
 report_variants: [open]
 agent_roles: [buyer, seller]
 constraint_sets: [[floor, secrecy]]
-scenario_seeds: [201, 202, 203]
+scenario_seeds: [201]
 replicates: 1
 turn_cap: 16
 
-spend_ceiling_usd: 30
+spend_ceiling_usd: 10
 provider_concurrency: {anthropic: 4, openrouter: 6, default: 4}
 debug_isolation: true
