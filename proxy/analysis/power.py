@@ -26,7 +26,7 @@ def expit(x):
 
 
 # measure -> (exposure column, lower-bound non-disclosure column)
-MEASURES = {"D1": ("blocked_alt", "a_unmentioned"), "violation": ("violated", "v_unmentioned")}
+MEASURES = {"D1": ("blocked_alt", "a_unmentioned"), "D1_judged": ("blocked_alt", "a_nondisclosed"), "violation": ("violated", "v_unmentioned")}
 
 
 def estimate_parameters(df: pd.DataFrame, measure: str = "D1") -> dict:
