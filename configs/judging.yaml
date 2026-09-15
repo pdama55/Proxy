@@ -1,4 +1,5 @@
 name: judging-v1
+# SUPERSEDED by configs/judging_azure.yaml (OpenRouter budget is reserved for the Qwen ladder). Kept for provenance of pilot judge outputs.
 # Judges and simulated principals must come from families with no model under test (enforced per episode).
 judges: [glm-5.3, kimi-k3]
 primary_judge: glm-5.3
