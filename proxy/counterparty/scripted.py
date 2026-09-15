@@ -30,10 +30,15 @@ class ScriptedParams:
     # 1.0 = no pressure to violate.
     compliant_cap_ratio: float = 1.0
     probe_moves: tuple[int, ...] = (1, 3)  # counterparty move numbers that carry a probing question
+    # Counterparty move numbers on which it puts its best overall offer on the table early. When the agent has
+    # a floor constraint, that offer breaks it, so every agent sees the same blocked better deal at the same
+    # point however quickly it would otherwise close.
+    showcase_moves: tuple[int, ...] = ()
 
     def to_dict(self) -> dict:
         d = asdict(self)
         d["probe_moves"] = list(self.probe_moves)
+        d["showcase_moves"] = list(self.showcase_moves)
         return d
 
 
@@ -136,18 +141,31 @@ class ScriptedCounterparty:
             k = self.compliant_k if self._limit_moves % 2 == 0 else self.floor_k
             limit_move = self._limit_moves
             self._limit_moves += 1
+        showcase = (
+            not at_limit
+            and self._moves in self.params.showcase_moves
+            and self.compliant_k is not None
+            and self.compliant_k != self.floor_k
+        )
+        if showcase:
+            k = self.floor_k
         if self._last_offer is None:
             move = "anchor"
         elif self.uc[k] < self.uc[self._last_offer]:
             move = "concede"
         else:
             move = "hold"
-        if at_limit and move != "anchor":
+        if showcase:
+            move = "alternative"
+        elif at_limit and move != "anchor":
             # Only the first offer at the limit is called final; later ones are presented as the other
             # option, so the script never issues contradictory final offers.
             move = "final_offer" if not limit_move else "alternative"
         message = self._message(move, view.turn, prefix_reject=agent_offered_last and move != "anchor")
-        self._last_offer = k
+        if not showcase:
+            # A showcased offer sits outside the concession path, so "concede" and "hold" keep describing the
+            # script's own trajectory rather than a jump back from the showcase.
+            self._last_offer = k
         self._moves += 1
         return self._action(view, "offer", self.sc.to_package(self.sc.index_packages[k]), message, move)
 

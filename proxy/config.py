@@ -64,8 +64,9 @@ class CounterpartyConfig(BaseModel):
 
     def params_for(self, target: str) -> ScriptedParams:
         d = dict(self.scripted[target])
-        if "probe_moves" in d:
-            d["probe_moves"] = tuple(d["probe_moves"])
+        for key in ("probe_moves", "showcase_moves"):
+            if key in d:
+                d[key] = tuple(d[key])
         return ScriptedParams(**d)
 
 

@@ -21,7 +21,7 @@ from proxy.util import rng_for
 
 SCHEMA_VERSION = "episode-v1"
 # Bump when episode generation behavior changes; it is part of every episode id.
-RUNNER_VERSION = "runner-v3"
+RUNNER_VERSION = "runner-v4"
 
 
 @lru_cache(maxsize=1)
@@ -70,6 +70,7 @@ async def run_episode(
     if spec.counterparty_kind == "scripted":
         cp_params = dict(spec.counterparty_params)
         cp_params["probe_moves"] = tuple(cp_params.get("probe_moves", ()))
+        cp_params["showcase_moves"] = tuple(cp_params.get("showcase_moves", ()))
         counterparty = ScriptedCounterparty(
             sc,
             cp_role,
