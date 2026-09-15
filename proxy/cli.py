@@ -264,6 +264,72 @@ def cmd_probe(args):
     print(spend.summary())
 
 
+def cmd_rereport(args):
+    """Re-asks each stored negotiation for its report under another report variant, with the same agent model.
+    The negotiation is untouched, so variants are compared on identical transcripts. Results go to a new run
+    "<run>--<variant>" with spec.report_variant set, so scoring, judging and analysis treat them as episodes."""
+    import copy
+
+    from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
+    from proxy.config import EpisodeSpec
+    from proxy.env.briefing import Briefing
+    from proxy.env.scenario import Scenario
+    from proxy.runner import render
+    from proxy.runner.types import PublicAction
+
+    models = load_models()
+    store = EpisodeStore(args.data)
+    spend = SpendTracker(args.spend_ceiling)
+    factory = AdapterFactory(spend, {"anthropic": 4, "openrouter": 6, "azure": 12, "default": 4}, 300.0)
+    out_run = f"{args.run}--{args.variant}"
+
+    async def go():
+        slots = asyncio.Semaphore(12)
+        counts = {"written": 0, "skipped": 0}
+
+        async def one(path):
+            async with slots:
+                ep = store.load(path)
+                if ep["termination"]["reason"] == "error" or ep["spec"]["model"] not in models or not ep.get("report"):
+                    counts["skipped"] += 1
+                    return
+                new = copy.deepcopy(ep)
+                new["spec"]["report_variant"] = args.variant
+                new["condition"]["report_variant"] = args.variant
+                new["episode_id"] = EpisodeSpec(**new["spec"]).episode_id()
+                if store.exists(out_run, new["episode_id"]) and not args.force:
+                    counts["skipped"] += 1
+                    return
+                sc = Scenario.from_dict(ep["scenario"])
+                briefing = Briefing.from_dict(ep["briefing"])
+                public = [PublicAction(a["turn"], a["role"], a["type"], a["package"], a["message"]) for a in ep["actions"]]
+                system, user = render.report_messages(
+                    briefing, tuple(sc.issues), public, ep["termination"]["reason"], ep["termination"]["final_package"],
+                    ep["condition"]["effective_turn_cap"], args.variant,
+                )
+                adapter = factory.get(models[ep["spec"]["model"]])
+                c = await adapter.complete(system, [{"role": "user", "content": user}], seed=None)
+                new["report"] = {
+                    "variant": args.variant, "system": system, "prompt": user, "text": c.text,
+                    "tokens_in": c.tokens_in, "tokens_out": c.tokens_out, "reasoning_tokens": c.reasoning_tokens,
+                    "latency_ms": c.latency_ms, "cost_usd": c.cost_usd, "finish_reason": c.finish_reason, "model_version": c.model_version,
+                }
+                new["rereport_of"] = {"run": ep["run"], "episode_id": ep["episode_id"]}
+                new["run"] = out_run
+                new["detectors"], new["scores"] = {}, {}
+                store.write(new)
+                counts["written"] += 1
+
+        try:
+            await asyncio.gather(*[one(p) for p in store.iter_paths(args.run)])
+        except BudgetExceeded as e:
+            print(f"stopped: {e}")
+        return counts
+
+    print(out_run, asyncio.run(go()))
+    print(spend.summary())
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="proxy")
     p.add_argument("--data", default=None, help="data directory (default: ./data)")
@@ -310,6 +376,13 @@ def main(argv=None):
     j.add_argument("--limit", type=int)
     j.add_argument("--force", action="store_true")
     j.set_defaults(func=cmd_judge)
+
+    rr = sub.add_parser("rereport", help="re-ask stored negotiations for their report under another report variant")
+    rr.add_argument("--run", required=True)
+    rr.add_argument("--variant", required=True)
+    rr.add_argument("--force", action="store_true")
+    rr.add_argument("--spend-ceiling", dest="spend_ceiling", type=float, default=10.0)
+    rr.set_defaults(func=cmd_rereport)
 
     pr = sub.add_parser("probe", help="knowledge probe: ask each agent whether a better offer existed, after its report")
     pr.add_argument("--run")

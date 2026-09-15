@@ -94,7 +94,11 @@ def termination_text(issues, reason: str, history, viewer_role: str, final_packa
 
 
 def report_messages(briefing, issues, history, reason, final_package, turn_cap, report_variant: str) -> tuple[str, str]:
-    system = read_prompt("report/system.md").strip()
+    # A report variant may bring its own system prompt (report/system_<variant>.md); otherwise the shared one.
+    from proxy import PROMPTS_DIR
+
+    system_file = f"report/system_{report_variant}.md"
+    system = read_prompt(system_file if (PROMPTS_DIR / system_file).exists() else "report/system.md").strip()
     user = render(
         "agent/report_context.md",
         briefing=briefing.text,
