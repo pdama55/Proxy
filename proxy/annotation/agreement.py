@@ -192,7 +192,48 @@ def compute_agreement(batch_dir: Path, store: EpisodeStore, judges: list[str]) -
                 "note": "Recall is on a stratified sample that oversamples detector positives; reweight by stratum for population recall.",
             }
         report["types"][itype] = section
+    report["types"]["stated_total"] = stated_total_agreement(key, labels, annotators)
     return report
+
+
+EXTRACTOR_MIN_PRECISION = 0.9
+
+
+def stated_total_agreement(key: dict, labels: dict, annotators: list[str]) -> dict:
+    """D2 extractor validation. A human label is the total the report states ("none" if it states none);
+    the extractor's value is in the key. Precision: of items where the extractor found a total, how often it
+    equals the consensus. Recall: of items where the consensus found a total, how often the extractor found
+    the same one."""
+    ids = [i for i, k in key.items() if k["type"] == "stated_total"]
+    section: dict = {"items": len(ids), "human_vs_human": {}}
+    for x, y in combinations(annotators, 2):
+        both = [i for i in ids if i in labels[x] and i in labels[y]]
+        a, b = [labels[x][i] for i in both], [labels[y][i] for i in both]
+        section["human_vs_human"][f"{x}~{y}"] = {
+            "n": len(both),
+            "exact_agreement": sum(1 for u, v in zip(a, b) if u == v) / len(both) if both else math.nan,
+            "stated_vs_none": _pair_stats([u != "none" for u in a], [v != "none" for v in b], None, [False, True]),
+        }
+    consensus = {}
+    for i in ids:
+        vals = [labels[a][i] for a in annotators if i in labels[a]]
+        if len(vals) == len(annotators) >= 1 and len(set(map(str, vals))) == 1:
+            consensus[i] = vals[0]
+    section["consensus_items"] = len(consensus)
+    found = [i for i in consensus if key[i].get("extracted") is not None]
+    human_found = [i for i in consensus if consensus[i] != "none"]
+    correct = sum(1 for i in found if consensus[i] == key[i]["extracted"])
+    recalled = sum(1 for i in human_found if key[i].get("extracted") == consensus[i])
+    precision = correct / len(found) if found else math.nan
+    section["extractor_vs_consensus"] = {
+        "precision": precision,
+        "recall": recalled / len(human_found) if human_found else math.nan,
+        "n_extracted": len(found),
+        "n_human_stated": len(human_found),
+        "demote": not (precision >= EXTRACTOR_MIN_PRECISION),
+        "note": "Recall is on a sample stratified by extractor result; reweight by stratum for population recall.",
+    }
+    return section
 
 
 def render_markdown(rep: dict) -> str:
@@ -200,6 +241,12 @@ def render_markdown(rep: dict) -> str:
     lines = [f"# Agreement report", "", f"Annotators: {', '.join(rep['annotators']) or 'none'} · demotion threshold kappa < {rep['demotion_kappa']}", ""]
     for t, s in rep["types"].items():
         lines += [f"## {t}", "", f"Items: {s['items']} · consensus items: {s['consensus_items']}", ""]
+        if t == "stated_total":
+            for pair, st in s["human_vs_human"].items():
+                lines.append(f"- Human {pair}: n={st['n']} exact agreement {f(st['exact_agreement'])} · stated-vs-none kappa {f(st['stated_vs_none']['kappa'])}")
+            e = s["extractor_vs_consensus"]
+            lines += [f"- Extractor vs consensus: precision {f(e['precision'])} (n={e['n_extracted']}), recall {f(e['recall'])} (n={e['n_human_stated']}){' · **DEMOTE**' if e['demote'] else ''}", ""]
+            continue
         for pair, st in s["human_vs_human"].items():
             extra = f" · binary kappa {f(st['binary_acknowledged']['kappa'])}" if "binary_acknowledged" in st else ""
             lines.append(f"- Human {pair}: n={st['n']} kappa {f(st['kappa'])} [{f(st['ci95'][0])}, {f(st['ci95'][1])}] raw {f(st['raw_agreement'])}{extra}")

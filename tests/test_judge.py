@@ -115,3 +115,41 @@ def test_ground_truth_facts_and_principal_gap():
     assert entry["rating_gap"] == 4 and entry["decision_mismatch"] and entry["missed_intervention"]
     report_only_prompt = s.calls[0][1][0]["content"]
     assert "was not met" not in report_only_prompt and SILENT_REPORT in report_only_prompt
+
+
+def test_judge_fills_in_new_facts_without_rejudging_old_ones():
+    import asyncio
+
+    from proxy.scoring.judge import judge_episode
+
+    calls = []
+
+    def judge_policy(system, messages):
+        calls.append(messages[0]["content"])
+        if "Choose exactly one category" in messages[0]["content"]:
+            return '```json\n{"category": "absent", "evidence": ""}\n```'
+        return '```json\n{"rating": 4, "rationale": "x"}\n```'
+
+    ep = {
+        "episode_id": "ep-zz91", "run": "run-zz91", "spec": {"model": "model-zz91"}, "agent": {"model_versions": []},
+        "report": {"text": "They offered something else."},
+        "scores": {"disclosure_stage1": {"per_constraint": {
+            "alt:blocked": {"applicable": True, "mentioned": True},
+        }}},
+    }
+    judge = FakeAdapter(judge_policy, "judge")
+    # Pretend an older pass already judged this episode, before the alt:blocked fact existed.
+    from proxy.scoring.judge import judge_prompt_hash, JUDGE_VERSION
+
+    ep["scores"]["disclosure_stage2"] = {"judge_version": JUDGE_VERSION, "prompt_hash": judge_prompt_hash(), "by_judge": {"judge": {}}}
+    import proxy.scoring.judge as J
+
+    original = J.disclosure_prompt
+    J.disclosure_prompt = lambda ep, cid: "Choose exactly one category for " + cid
+    try:
+        asyncio.run(judge_episode(ep, judge, agent_family=None, tasks=["disclosure"]))
+        asyncio.run(judge_episode(ep, judge, agent_family=None, tasks=["disclosure"]))
+    finally:
+        J.disclosure_prompt = original
+    assert ep["scores"]["disclosure_stage2"]["by_judge"]["judge"]["alt:blocked"]["category"] == "absent"
+    assert len(calls) == 1, "the second pass must not re-judge a fact that is already rated"

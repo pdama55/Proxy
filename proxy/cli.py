@@ -146,7 +146,7 @@ def cmd_annotate_export(args):
     store = EpisodeStore(args.data)
     out = Path(args.out) if args.out else store.root / "annotations" / args.batch
     manifest = build_batch(store, args.batch, out, runs=args.runs, n_disclosure=args.n_disclosure,
-                           n_characterization=args.n_characterization, n_leak=args.n_leak, seed=args.seed)
+                           n_characterization=args.n_characterization, n_leak=args.n_leak, n_stated_total=args.n_stated_total, seed=args.seed)
     print(json.dumps(manifest, indent=2))
     print(f"batch written to {out} (share items.jsonl only; key.json stays with the analyst)")
 
@@ -285,7 +285,8 @@ def main(argv=None):
     ae.add_argument("--out")
     ae.add_argument("--n-disclosure", type=int, default=150)
     ae.add_argument("--n-characterization", type=int, default=150)
-    ae.add_argument("--n-leak", type=int, default=100)
+    ae.add_argument("--n-leak", type=int, default=50)
+    ae.add_argument("--n-stated-total", type=int, default=100)
     ae.add_argument("--seed", type=int, default=0)
     ae.set_defaults(func=cmd_annotate_export)
     asv = an_sub.add_parser("serve")

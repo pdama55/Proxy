@@ -15,7 +15,7 @@ from proxy.scoring.judge import disclosure_fact
 from proxy.store import EpisodeStore
 from proxy.util import sha256
 
-ITEM_TYPES = ("disclosure", "characterization", "leak")
+ITEM_TYPES = ("disclosure", "characterization", "leak", "stated_total")
 GUIDELINES = Path(__file__).resolve().parents[2] / "docs" / "annotation_guidelines.md"
 
 
@@ -49,10 +49,11 @@ def build_batch(
     n_disclosure: int = 150,
     n_characterization: int = 150,
     n_leak: int = 100,
+    n_stated_total: int = 100,
     seed: int = 0,
 ) -> dict:
     rng = random.Random(seed)
-    disclosure, characterization, leak = [], [], []
+    disclosure, characterization, leak, stated_total = [], [], [], []
     for _, ep in store.iter():
         if runs and ep.get("run") not in runs:
             continue
@@ -69,6 +70,11 @@ def build_batch(
                                    "payload": {"fact": disclosure_fact(ep, cid), "report": report}})
         if report:
             characterization.append({**base, "stratum": (target, ep["spec"]["model"]), "payload": {"report": report}})
+        st = (ep.get("detectors") or {}).get("stated_total") or {}
+        if report and st.get("applicable"):
+            # The extractor's value goes in the key, never in the item, so annotators stay blind to it.
+            stated_total.append({**base, "stratum": ("stated" if st.get("stated") else "not_stated", ep["spec"]["model"]),
+                                 "extracted": st.get("stated_points"), "payload": {"report": report}})
         for cid, d in (ep.get("detectors") or {}).get("constraints", {}).items():
             if d["type"] == "secrecy":
                 con = next(x for x in ep["briefing"]["constraints"] if x["constraint_id"] == cid)
@@ -79,12 +85,19 @@ def build_batch(
                              "payload": {"secret": f"${con['secret_value']:,}", "secret_description": f"the client's {what}", "messages": messages}})
 
     items, key = [], {}
-    for item_type, cands, n in (("disclosure", disclosure, n_disclosure), ("characterization", characterization, n_characterization), ("leak", leak, n_leak)):
+    for item_type, cands, n in (
+        ("disclosure", disclosure, n_disclosure),
+        ("characterization", characterization, n_characterization),
+        ("leak", leak, n_leak),
+        ("stated_total", stated_total, n_stated_total),
+    ):
         for c in stratified_sample(cands, lambda c: c["stratum"], n, rng):
             cid = c.get("cid")
             iid = _item_id(batch_name, item_type, c["episode_id"], cid or "")
             items.append({"item_id": iid, "type": item_type, **c["payload"]})
             key[iid] = {"type": item_type, "episode_id": c["episode_id"], "run": c["run"], "constraint_id": cid, "stratum": list(c["stratum"])}
+            if item_type == "stated_total":
+                key[iid]["extracted"] = c["extracted"]
 
     rng.shuffle(items)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -94,9 +107,9 @@ def build_batch(
         "batch": batch_name,
         "seed": seed,
         "runs": runs,
-        "requested": {"disclosure": n_disclosure, "characterization": n_characterization, "leak": n_leak},
+        "requested": {"disclosure": n_disclosure, "characterization": n_characterization, "leak": n_leak, "stated_total": n_stated_total},
         "sampled": {t: sum(1 for i in items if i["type"] == t) for t in ITEM_TYPES},
-        "available": {"disclosure": len(disclosure), "characterization": len(characterization), "leak": len(leak)},
+        "available": {"disclosure": len(disclosure), "characterization": len(characterization), "leak": len(leak), "stated_total": len(stated_total)},
         "guidelines_sha256": sha256(GUIDELINES.read_text()) if GUIDELINES.exists() else None,
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=1))

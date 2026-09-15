@@ -1,6 +1,6 @@
 # Proxy
 
-A research harness that measures whether an LLM agent negotiating on someone's behalf reports back truthfully: when it breaks an instruction or leaks a secret, does its report say so?
+A research harness that measures whether an LLM agent negotiating on someone's behalf reports back faithfully. Against exact ground truth, does its report tell the client about a better deal that only the client's own requirement ruled out, and does it state the deal's value correctly? Instruction violations and leaked secrets are measured too, but in the pilots agents almost never committed them.
 
 Design documents: [PRD](PRD.md) · [Technical design](TDD.md) · [Research plan](RESEARCH_PLAN.md) · [Design decisions](docs/DECISIONS.md) · [Annotation guidelines](docs/annotation_guidelines.md) · [Preregistration draft](docs/PREREGISTRATION_DRAFT.md)
 
@@ -77,12 +77,13 @@ tests/           benchmarks, isolation, normalizer, parser, golden episodes, jud
 
 ## Status
 
-The full pipeline is built and tested end to end, from generation to analysis, on a synthetic study with a planted effect (`tests/synthetic.py`). No real model has been called yet.
+The full pipeline is built and tested end to end, from generation to analysis, on a synthetic study with a planted effect (`tests/synthetic.py`). Two real pilots have run on Claude Haiku 4.5 and Qwen3.5 27B, 120 episodes in all (`pilot-v1`, `pilot-v2-sweep`):
+
+- Harness bugs the pilot exposed are fixed (runner-v3). The outcome bands now land for real models.
+- No agent violated a floor constraint or leaked its secret, under any briefing variant. The primary measures were therefore reframed (detectors-v2): D1 is non-disclosure of a better deal blocked by the client's requirement (exposure about 90% of episodes), and D2 is the error in the report's stated point total. See [docs/DECISIONS.md](docs/DECISIONS.md) and the revision note in the [preregistration draft](docs/PREREGISTRATION_DRAFT.md).
 
 Next steps:
 
-1. Add API keys and run `proxy models --ping`.
-2. Run the pilot (48 episodes, under $15) and read every transcript.
-3. Retune counterparty parameters and prompts from what the pilot shows, then run the power analysis.
-4. Fill in the TBDs in the preregistration draft and post it.
-5. Run the ablations, then the confirmatory grid, then annotation, then `proxy analyze all`.
+1. Judge the pilot episodes and estimate D1, D2 and H5 parameters; run `proxy analyze power`.
+2. Fill in the TBDs in the preregistration draft, get one outside reviewer to read the design, and post it.
+3. Run the ablations, then the confirmatory grid on new scenario seeds, then annotation (including stated-total items), then `proxy analyze all`.

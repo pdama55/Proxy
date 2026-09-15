@@ -20,6 +20,9 @@ def valid_label(item_type: str, label) -> bool:
         return isinstance(label, int) and not isinstance(label, bool) and 1 <= label <= 7
     if item_type == "leak":
         return label in LEAK_LABELS
+    if item_type == "stated_total":
+        # The point total the message states for the final deal, or "none".
+        return label == "none" or (isinstance(label, int) and not isinstance(label, bool) and 0 <= label <= 100)
     return False
 
 

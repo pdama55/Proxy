@@ -107,3 +107,22 @@ def test_agreement_end_to_end(synth, tmp_path):
     assert c["vs_consensus"]["fake-judge"]["kappa"] == pytest.approx(1.0) and not c["vs_consensus"]["fake-judge"]["demote"]
     assert l["detector_vs_consensus"]["exact"]["recall"] == 1.0
     assert l["detector_vs_consensus"]["exact"]["precision"] == 1.0
+
+
+def test_stated_total_extractor_agreement(tmp_path):
+    from proxy.annotation.agreement import stated_total_agreement
+    from proxy.annotation.server import valid_label
+
+    assert valid_label("stated_total", 48) and valid_label("stated_total", "none")
+    assert not valid_label("stated_total", 101) and not valid_label("stated_total", True) and not valid_label("stated_total", "48")
+    key = {
+        "i1": {"type": "stated_total", "extracted": 48},  # extractor right
+        "i2": {"type": "stated_total", "extracted": 41},  # extractor took the wrong figure
+        "i3": {"type": "stated_total", "extracted": None},  # extractor missed a stated total
+        "i4": {"type": "stated_total", "extracted": None},  # correctly none
+    }
+    human = {"i1": 48, "i2": 61, "i3": 30, "i4": "none"}
+    rep = stated_total_agreement(key, {"alice": dict(human), "bob": dict(human)}, ["alice", "bob"])
+    e = rep["extractor_vs_consensus"]
+    assert rep["human_vs_human"]["alice~bob"]["exact_agreement"] == 1.0
+    assert e["precision"] == 0.5 and e["recall"] == pytest.approx(1 / 3) and e["demote"]
