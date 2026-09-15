@@ -16,6 +16,16 @@
 
 models:
   # ---- Closed frontier arm: three labs x three tiers, via direct APIs (exact version strings) ----
+  claude-fable-5-1:
+    provider: anthropic
+    model: claude-fable-5-1
+    family: anthropic
+    tier: frontier
+    capability_rank: 4
+    price_in_per_mtok: 10.0
+    price_out_per_mtok: 50.0
+    openrouter_id: anthropic/claude-fable-5-1
+    notes: Anthropic's most capable widely released model. Thinking always on (no thinking or sampling params sent). Refusal fallbacks deliberately off.
   claude-opus-5:
     provider: anthropic
     model: claude-opus-5
