@@ -45,6 +45,12 @@ class OpenAICompatAdapter(Adapter):
         self.client = openai.AsyncOpenAI(
             api_key=api_key or "EMPTY", base_url=base_url, timeout=self.timeout_s, max_retries=5
         )
+        self.clients = [self.client]
+        if self.spec.provider == "azure" and self.spec.azure_pool_env:
+            for entry in filter(None, (os.environ.get(self.spec.azure_pool_env) or "").split(";")):
+                url, _, key = entry.partition("|")
+                self.clients.append(openai.AsyncOpenAI(api_key=key, base_url=azure_base_url(url), timeout=self.timeout_s, max_retries=5))
+        self._next = 0
 
     async def _complete(self, system: str, messages: list[dict], *, seed: int | None) -> Completion:
         params = dict(self.spec.params)
@@ -63,7 +69,9 @@ class OpenAICompatAdapter(Adapter):
         if extra_body:
             kwargs["extra_body"] = extra_body
         try:
-            resp = await self.client.chat.completions.create(**kwargs)
+            client = self.clients[self._next % len(self.clients)]
+            self._next += 1
+            resp = await client.chat.completions.create(**kwargs)
         except openai.APIStatusError as e:
             raise AdapterError(f"{self.spec.key}: HTTP {e.status_code}: {str(e.message)[:300]}") from e
         except openai.APIConnectionError as e:

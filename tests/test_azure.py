@@ -29,3 +29,16 @@ def test_azure_adapter_requires_endpoint_and_key(monkeypatch):
     monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://res.openai.azure.com")
     a = OpenAICompatAdapter(_spec(), SpendTracker(1.0), asyncio.Semaphore(1), timeout_s=5)
     assert str(a.client.base_url) == "https://res.openai.azure.com/openai/v1/"
+
+
+def test_azure_pool_rotates_clients(monkeypatch):
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "k")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://main.openai.azure.com")
+    monkeypatch.setenv("POOL", "https://a.openai.azure.com/openai/v1|ka;https://b.openai.azure.com|kb")
+    spec = ModelSpec(key="az", provider="azure", model="dep", family="x", tier="small", azure_pool_env="POOL")
+    a = OpenAICompatAdapter(spec, SpendTracker(1.0), asyncio.Semaphore(1), timeout_s=5)
+    assert [str(c.base_url) for c in a.clients] == [
+        "https://main.openai.azure.com/openai/v1/",
+        "https://a.openai.azure.com/openai/v1/",
+        "https://b.openai.azure.com/openai/v1/",
+    ]

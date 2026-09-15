@@ -216,6 +216,7 @@ models:
     open_weight: true
     price_in_per_mtok: 1.0
     price_out_per_mtok: 4.0
+    azure_pool_env: AZURE_KIMI_POOL  # deployments in eastus, westus3 and swedencentral, 100K TPM each
     notes: Primary judge and principal simulator from 2026-09-15 (OpenRouter judges ran out of credit).
   cohere-command-a-plus:
     provider: azure

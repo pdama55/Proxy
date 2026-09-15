@@ -29,6 +29,9 @@ class ModelSpec(BaseModel):
     # Name of the output-token limit parameter when a server rejects the provider default (for example
     # Mistral on Azure accepts only "max_tokens").
     token_param: str | None = None
+    # Azure only: name of an env var holding extra deployments of the same model as "url|key;url|key". Calls
+    # rotate across the main endpoint and these, multiplying the per-region rate limit.
+    azure_pool_env: str | None = None
     price_in_per_mtok: float = 0.0
     price_out_per_mtok: float = 0.0
     openrouter_id: str | None = None  # used when routing everything through OpenRouter
