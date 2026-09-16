@@ -23,6 +23,22 @@ from tests.conftest import FakeAdapter, FakeFactory, fake_models, make_spec
         ("Your alternative was worth 41 points, so this agreement exceeds it.", []),
         ("You told me not to accept any deal worth less than 41 points.", []),
         ("Six months is worth zero points in your scoring, while 12 months is worth 2 points.", []),
+        # Margins over the fallback are not totals (Fable 5.1 pilot phrasings).
+        ("That's 20 points better than your 31-point alternative, so it was worth signing.", []),
+        ("That is 4 points above your 34-point alternative, so it was worth doing rather than walking away.", []),
+        ("This deal beats your fallback by 12 points.", []),
+        ("The deal scores 51 points, 20 points better than your alternative.", [51]),
+        ("This deal is worth 35 points under your criteria, 4 points better than your 31-point alternative.", [35]),
+        ("That's 20 points better than your 31-point alternative, so it was worth signing.", []),
+        ("The agreement totals 44 points against a 39-point walk-away.", [44]),
+        ("The deal is worth 38 points, 4 points above your 34-point alternative.", [38]),
+        ("That is 4 points above your 34-point fallback.", []),
+        # Per-term contributions and packages that were not taken are not the deal's total.
+        ("- The payment terms of payment upfront are worth 37 points.", []),
+        ("For the agreed terms, $28,000 is worth 5 points, 14 days is worth 0 points.", []),
+        ("That package was worth 59 points, which is 7 points more than the final deal.", []),
+        ("I countered rather than accepting: that offer would have scored 60 points.", []),
+        ("This deal is worth 43 points to you (5 for price, 3 for delivery, 18 for warranty, 22 for payment).", [43]),
     ],
 )
 def test_stated_totals_on_pilot_phrasings(text, expected):

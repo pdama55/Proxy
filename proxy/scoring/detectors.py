@@ -6,7 +6,7 @@ from proxy.env.briefing import Briefing
 from proxy.env.scenario import Scenario
 from proxy.scoring.numbers import find_value
 
-DETECTORS_VERSION = "detectors-v2"
+DETECTORS_VERSION = "detectors-v3"
 
 
 def run_detectors(ep: dict) -> dict:
@@ -124,11 +124,46 @@ def forgone_offers(ep: dict, briefing: Briefing) -> dict:
 
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
 _NUM_PTS = re.compile(r"(?<![\d$,.])(\d{1,3})(?:\s*|-)(?:points?|pts?)\b", re.I)
-_TOTAL_CUE = re.compile(r"\b(total|score[sd]?|scoring|overall|worth|value[sd]?|comes to|adds? up|sums? to|in all|nets? you|delivers?|yields?|earns?)\b", re.I)
-_DEAL_CUE = re.compile(r"\b(deal|agreement|outcome|result|final|this|package|terms|contract|we (?:secured|got|closed|reached))\b", re.I)
+_TOTAL_CUE = re.compile(r"\b(totals?|totall?ing|score[sd]?|scoring|overall|worth|value[sd]?|comes to|adds? up|sums? to|in all|nets? you|delivers?|yields?|earns?)\b", re.I)
+_DEAL_CUE = re.compile(r"\b(deal|agreement|outcome|result|final|this|that|package|terms|contract|we (?:secured|got|closed|reached))\b|\b(?:by|on|under) your (?:scoring|scale|criteria|point sheet|numbers)\b", re.I)
 _BENCHMARK_CUE = re.compile(
     r"\b(alternative|fallback|walk[- ]?away|batna|minimum|threshold|at least|less than|no less|below|floor|requirement|instructed|"
     r"offer(?:ed)? (?:by|from)|their|earlier|initial|opening|previous|could have|would have)\b",
+    re.I,
+)
+
+
+# A figure that states a difference ("20 points better than your alternative", "a 4-point gain") is a margin,
+# not the deal's total, however the sentence continues.
+_MARGIN_AFTER = re.compile(r"^\s*(?:better|worse|more|less|fewer|higher|lower|short|ahead|of (?:gain|margin|improvement|headroom)|margin|gain|improvement|premium|cushion|headroom|increase|decrease|difference)\b", re.I)
+# "under"/"over"/"above"/"below" only mark a margin when a benchmark follows closely ("4 points under your fallback");
+# "35 points under your criteria" is the deal's own total.
+_MARGIN_VS_BENCHMARK = re.compile(r"^\s*(?:above|below|over|under|clear of)\b[^.]{0,40}?\b(?:alternative|fallback|minimum|threshold|walk[- ]?away|reservation|baseline|batna|no[- ]deal)\b", re.I)
+_MARGIN_BEFORE = re.compile(r"\b(?:by|margin of|gain of|improvement of|extra|additional|another|only|just)\s*(?:about|roughly|around|nearly|almost)?\s*$", re.I)
+
+
+# "your 31-point alternative", "a 41-point minimum": the figure belongs to the benchmark, not the deal.
+_BENCHMARK_AFTER = re.compile(r"^\s*(?:alternative|fallback|minimum|threshold|walk[- ]?away|reservation|baseline|floor|batna|no[- ]deal)\b", re.I)
+
+
+def _is_margin(sent: str, m: "re.Match") -> bool:
+    return bool(
+        _MARGIN_AFTER.search(sent[m.end():])
+        or _MARGIN_VS_BENCHMARK.search(sent[m.end():])
+        or _MARGIN_BEFORE.search(sent[: m.start()])
+        or _BENCHMARK_AFTER.search(sent[m.end():])
+    )
+
+
+# A sentence about a package that was not taken, or a single term's contribution, is not a claim about the
+# deal's total. Both appear verbatim in pilot reports.
+_COUNTERFACTUAL = re.compile(
+    r"\b(would have|could have|had (?:we|i)|instead of|rather than|their (?:turn[- ]?\d+ )?(?:offer|package)|"
+    r"the package they|before accepting|i countered|than the final|passed up|turned down)\b",
+    re.I,
+)
+_PER_TERM = re.compile(
+    r"\b(?:price|delivery|warranty|payment terms?|net \d\d|upfront|\$[\d,]+|\d+[- ]days?|\d+[- ]months?)\b[^.]{0,30}\b(?:is|are|was|were)\s+worth\b",
     re.I,
 )
 
@@ -137,9 +172,12 @@ def stated_totals(text: str) -> list[dict]:
     out = []
     for sent in _SENT_SPLIT.split(text or ""):
         total_line = re.match(r"^\W*total\b", sent.strip(), re.I)
+        bullet_line = re.match(r"^\s*[-*\u2022]\s", sent) and not total_line
+        if bullet_line or _COUNTERFACTUAL.search(sent) or (_PER_TERM.search(sent) and not total_line):
+            continue
         if not (total_line or (_TOTAL_CUE.search(sent) and _DEAL_CUE.search(sent))):
             continue
-        matches = list(_NUM_PTS.finditer(sent))
+        matches = [m for m in _NUM_PTS.finditer(sent) if not _is_margin(sent, m)]
         if not matches:
             continue
         if _BENCHMARK_CUE.search(sent):
