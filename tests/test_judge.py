@@ -153,3 +153,43 @@ def test_judge_fills_in_new_facts_without_rejudging_old_ones():
         J.disclosure_prompt = original
     assert ep["scores"]["disclosure_stage2"]["by_judge"]["judge"]["alt:blocked"]["category"] == "absent"
     assert len(calls) == 1, "the second pass must not re-judge a fact that is already rated"
+
+
+def test_judging_survives_a_provider_failure():
+    """One blocked or failed judge call must not end the pass (Azure content filter, timeouts)."""
+    import asyncio
+
+    from proxy.adapters.base import AdapterError
+    from proxy.scoring.judge_run import JudgingConfig, judge_store
+    from proxy.store import EpisodeStore
+    from tests.synthetic import build_synthetic_store, registry
+
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        store = build_synthetic_store(tmp, seeds=2)
+        calls = {"n": 0}
+
+        def flaky(system, messages):
+            calls["n"] += 1
+            if calls["n"] % 11 == 0:
+                raise AdapterError("kimi: HTTP 400: content_filter")
+            if "Choose exactly one category" in messages[0]["content"]:
+                return '```json\n{"category": "absent", "evidence": ""}\n```'
+            if "business owner" in system:
+                return '```json\n{"rating": 4, "decision": "sign_off", "rationale": "x"}\n```'
+            return '```json\n{"rating": 4, "rationale": "x"}\n```'
+
+        judge = FakeAdapter(flaky, "fake-judge")
+        judge.spec = registry()["fake-judge"]
+
+        class F:
+            def get(self, spec):
+                return judge
+
+        cfg = JudgingConfig(name="t", judges=["fake-judge"], primary_judge="fake-judge", principal_models=["fake-judge"])
+        # build_synthetic_store already judged these episodes, so force a second pass through the flaky judge.
+        summary = asyncio.run(judge_store(EpisodeStore(tmp), cfg, registry(), factory=F(), force=True))
+        assert summary["adapter_errors"] > 0, "the flaky judge should have failed at least once"
+        assert summary["episodes"] > 0, "other episodes must still be judged"
+        assert summary["aborted"] is None

@@ -231,7 +231,7 @@ def cmd_pilot(args):
 
 
 def cmd_probe(args):
-    from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
+    from proxy.adapters import AdapterError, AdapterFactory, BudgetExceeded, SpendTracker
     from proxy.scoring.probe import probe_episode
 
     models = load_models()
@@ -250,7 +250,12 @@ def cmd_probe(args):
                 if ep["termination"]["reason"] == "error" or ep["spec"]["model"] not in models:
                     counts["skipped"] += 1
                     return
-                await probe_episode(ep, factory.get(models[ep["spec"]["model"]]), force=args.force)
+                try:
+                    await probe_episode(ep, factory.get(models[ep["spec"]["model"]]), force=args.force)
+                except AdapterError as e:
+                    counts["failed"] = counts.get("failed", 0) + 1
+                    print(f"  {ep['episode_id']}: {e}", file=sys.stderr)
+                    return
                 store.write(ep)
                 counts["probed"] += 1
 
@@ -270,7 +275,7 @@ def cmd_rereport(args):
     "<run>--<variant>" with spec.report_variant set, so scoring, judging and analysis treat them as episodes."""
     import copy
 
-    from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
+    from proxy.adapters import AdapterError, AdapterFactory, BudgetExceeded, SpendTracker
     from proxy.config import EpisodeSpec
     from proxy.env.briefing import Briefing
     from proxy.env.scenario import Scenario
@@ -308,7 +313,12 @@ def cmd_rereport(args):
                     ep["condition"]["effective_turn_cap"], args.variant,
                 )
                 adapter = factory.get(models[ep["spec"]["model"]])
-                c = await adapter.complete(system, [{"role": "user", "content": user}], seed=None)
+                try:
+                    c = await adapter.complete(system, [{"role": "user", "content": user}], seed=None)
+                except AdapterError as e:
+                    counts["failed"] = counts.get("failed", 0) + 1
+                    print(f"  {ep['episode_id']}: {e}", file=sys.stderr)
+                    return
                 new["report"] = {
                     "variant": args.variant, "system": system, "prompt": user, "text": c.text,
                     "tokens_in": c.tokens_in, "tokens_out": c.tokens_out, "reasoning_tokens": c.reasoning_tokens,

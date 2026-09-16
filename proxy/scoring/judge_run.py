@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, Field
 
-from proxy.adapters import AdapterFactory, BudgetExceeded, SpendTracker
+from proxy.adapters import AdapterError, AdapterFactory, BudgetExceeded, SpendTracker
 from proxy.config import ModelSpec
 from proxy.scoring.judge import JudgeConflict, judge_episode
 from proxy.scoring.principal import simulate_principal
@@ -56,7 +56,7 @@ async def judge_store(
     if limit is not None:
         paths = paths[:limit]
     slots = asyncio.Semaphore(max(sum(cfg.provider_concurrency.values()), 2))
-    counts = {"episodes": 0, "skipped_error": 0, "conflicts": 0}
+    counts = {"episodes": 0, "skipped_error": 0, "conflicts": 0, "adapter_errors": 0}
 
     async def one(path):
         async with slots:
@@ -75,6 +75,13 @@ async def judge_store(
             except JudgeConflict as e:
                 counts["conflicts"] += 1
                 print(f"  {ep['episode_id']}: {e}", file=sys.stderr)
+                return
+            except AdapterError as e:
+                # One provider failure (content filter, timeout) must not end the pass: keep whatever this
+                # episode already has, count it, and move on. A later pass fills in what is missing.
+                counts["adapter_errors"] += 1
+                print(f"  {ep['episode_id']}: {e}", file=sys.stderr)
+                store.write(ep)
                 return
             store.write(ep)
             counts["episodes"] += 1
