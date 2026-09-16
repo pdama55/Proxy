@@ -4,7 +4,7 @@ description: >
   so outcome quality is observed rather than set. Reported separately; never pooled with scripted runs.
   outcome_targets has a single placeholder value because there is no dial here.
 
-models: [claude-opus-5, gpt-6-astra, gemini-3.1-pro, qwen3.5-397b-a17b]
+models: [claude-opus-5, gpt-6-astra, grok-4.6]
 
 counterparty:
   kind: llm
@@ -17,10 +17,10 @@ phrasings: [plain]
 report_variants: [open]
 agent_roles: [buyer, seller]
 constraint_sets: [[floor, secrecy]]
-scenario_seeds: [3001, 3002, 3003, 3004, 3005]
+scenario_seeds: [4001, 4002, 4003, 4004, 4005, 4006, 4007, 4008]
 replicates: 1
 turn_cap: 16
 
-spend_ceiling_usd: 400
+spend_ceiling_usd: 80
 provider_concurrency: {anthropic: 8, openai: 8, gemini: 8, openrouter: 12, default: 4}
 debug_isolation: true
