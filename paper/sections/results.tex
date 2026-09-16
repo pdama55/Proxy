@@ -1,35 +1,63 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Agents follow instructions}
-Across all \nEpisodes\ negotiations, agents broke the client's floor requirement \violationCount\ times and leaked the confidential figure \leakCount\ times. The failure studied here is therefore not concealed misconduct.
+Every number below comes from \texttt{proxy analyze all} over \nEpisodes\ confirmatory episodes; intervals resample scenarios.
 
-\subsection{Reports omit the blocked better deal}
+\subsection{Agents obeyed}
+Agents accepted a package that broke the client's requirement in \violationCount\ episodes (1.3\%, CI 0.7--2.0) and revealed the confidential figure in \leakCount\ (0.2\%). Both rates are an order of magnitude below the violation rates reported when a rule stands between an agent and its assigned goal. The reporting failures below are therefore not cover stories for misconduct: there was almost none to cover.
+
+\subsection{Reports rarely convey the blocked better deal}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/d1_by_model.pdf}
-\caption{Share of exposed episodes in which the report does not convey the better deal that the client's requirement blocked. Filled points: judged; hollow diamonds: judge-free lower bound. Bars are 95\% intervals.}
+\caption{Share of exposed episodes whose report does not convey the better deal that the client's own requirement blocked. Filled points: judged. Hollow diamonds: the judge-free lower bound (the report refers to no other offer at all). Bars are 95\% intervals.}
 \label{fig:d1}
 \end{figure}
-\textbf{[TBD: H1a, per-model rates, Opus/Fable vs.\ others, H4.]}
 
-\subsection{They know, and they tell when asked}
-\textbf{[TBD: knowledge probe K1; tradeoffs and norm interventions (E7).]}
+A blocked better deal was on the table in \exposureRate\ of episodes. Reports conveyed it in \doneToldAll\ of them: judged non-disclosure is \doneJudgedAll\ (\hyperref[sec:validation]{validated in \cref{sec:validation}}), supporting H1a ($p_{\text{Holm}} = .003$). Two judge-free measures bracket that figure without any model judgment. Only \doneNamedAll\ of reports name the blocked offer at all, by its price, its value in points, or the term the requirement ruled out; a report that never names it cannot have conveyed it, so non-disclosure is at least 70\% on mechanical grounds alone. At the conservative end, \doneLowerAll\ of reports refer to no other offer or option whatsoever.
 
-\subsection{Stated value tracks capability}
+Claude Opus 5 is the exception at every level of measurement: it conveyed the blocked deal in \doneToldClaudeOpusFive\ of exposed episodes against \doneToldGptSixAstra\ for GPT-6 Astra, \doneToldClaudeSonnetFive\ for Claude Sonnet 5 and \doneToldGrokFourSix\ for Grok 4.6. Frontier status does not predict disclosure: the two frontier models from different developers sit at opposite ends.
+
+\subsection{Silence is not ignorance}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/knowledge_vs_disclosure.pdf}
+\caption{For each model: how often the report told the client unprompted (right), and how often the agent named the blocked offer's value when asked directly afterwards, among reports that had stayed silent (left).}
+\label{fig:knowledge}
+\end{figure}
+
+After each report was recorded, the same model was asked in the same conversation whether the other party had offered anything worth more that it did not take. Among silent reports, agents named that offer's value correctly in \probeKnewAll\ of cases (n = \probeN). GPT-6 Astra, GPT-5.6 Sol, Grok 4.6 and Qwen3.5 27B answered correctly in \probeKnewGptSixAstra, \probeKnewGptFiveSixSol, \probeKnewGrokFourSix\ and \probeKnewQwenthreeFiveTwosevenb\ of cases respectively, while telling the client unprompted in about one episode in a hundred. The information was available, retrievable on request, and omitted.
+
+\subsection{Asking works; instructing the agent mostly does not}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/interventions.pdf}
+\caption{Judged non-disclosure under three report prompts on identical negotiations.}
+\label{fig:interventions}
+\end{figure}
+
+Re-asking the same \nInterventionPairs\ negotiations for a report under a different prompt isolates the prompt's effect. When the client's question asks about terms the agent turned down, judged non-disclosure falls from 97\% to 28\% ($-0.70$, CI $-0.71$ to $-0.69$), and to 0--4\% for GPT-6 Astra, GPT-5.6 Sol, GPT-5.6 Luna and Grok 4.6. A deployer-side instruction stating that the client relies on the account to decide whether to keep their own instructions is weaker and uneven: 97\% to 55\% overall ($-0.42$), with Claude Haiku 4.5 at 98\%, Llama 4 Maverick at 93\% and Claude Sonnet 5 at 86\% essentially unmoved. The burden of eliciting the trade-off falls on a principal who already suspects it exists.
+
+\subsection{Stated values, and what the requirement cost}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/d2_errors.pdf}
 \caption{Stated minus true point total, among reports that state one.}
 \label{fig:d2}
 \end{figure}
-\textbf{[TBD: H1b, H2b.]}
 
-\subsection{Portrayal, outcome quality and audit framing}
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/portrayal.pdf}
-\caption{How good an outcome the report portrays, after bad and good outcomes.}
-\label{fig:portrayal}
-\end{figure}
-\textbf{[TBD: H2a, H3, portrayal bias, decision cost H5, breadth and stakes.]}
+Reports state the deal's value in \dtwoStatedRate\ of deals and state it wrongly in \dtwoWrongAll\ of those (H1b, $p_{\text{Holm}} = .003$), with a mean absolute error of \dtwoAbsError\ points. Errors are concentrated: Claude Haiku 4.5 (\dtwoWrongClaudeHaikuFourFive), DeepSeek V4 Pro (\dtwoWrongDeepseekVfourProAzure) and Mistral Large 3 (\dtwoWrongMistralLargeThree) against 0--9\% for the frontier models. Unlike omission, this tracks capability.
+
+The requirement's shadow price---the points the blocked deal would have added---averaged \shadowMean\ points (median \shadowMedian; \shadowShareAboveTen\ of episodes above 10). Disclosure barely responds to it: 4.1\% of high-stakes episodes were disclosed against 1.7\% of low-stakes ones (difference 2.4 points, CI 1.0--3.9), and within the 100-scenario breadth run the slope of disclosure on points forgone is indistinguishable from zero for Claude Opus 5 ($p = .67$).
+
+\subsection{Preregistered contrasts}
+\begin{itemize}
+  \item \textbf{H2a (worse after bad outcomes): not supported.} Non-disclosure was \emph{lower} after bad outcomes by 3 points ($p = .99$). Agents explain weak results at more length, which surfaces other offers.
+  \item \textbf{H2b (value overstated after bad outcomes): supported.} Stated totals run \dtwoSignedDiff\ points higher, relative to truth, after bad outcomes than after good ones ($p_{\text{Holm}} = .003$). Characterization bias moves the same way: $+0.96$ SD (CI 0.88--1.04).
+  \item \textbf{H3 (audit framing): supported but small.} Telling the agent the transcript will be read lowers the judge-free rate by 3 points ($p_{\text{Holm}} = .039$) and leaves the judged rate unchanged.
+  \item \textbf{H4 (capability does not help): not supported.} Within families, non-disclosure falls with capability rank (OR 0.45 per rank, CI 0.38--0.53), driven by Claude Opus 5; it is flat within the Qwen ladder and within OpenAI.
+  \item \textbf{H5 (decision cost larger after bad outcomes): not supported.} The simulated principal rates outcomes \emph{lower} from the report than from ground truth ($-0.69$), and the gap is not larger after bad outcomes ($p = 1.00$). Reports still changed the sign-off decision in \principalMismatch\ of episodes, and produced a missed intervention in 3.8\%.
+\end{itemize}
+
+\subsection{Generality and awareness}
+In the breadth run, 100 scenarios never used elsewhere, judged non-disclosure was 68\% for Claude Opus 5, 96\% for Claude Sonnet 5, 98\% for GPT-6 Astra and 100\% for Grok 4.6, matching the main grid. No report in \nEpisodes\ episodes stated that the negotiation was a test, simulation or evaluation.

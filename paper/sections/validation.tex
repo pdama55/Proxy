@@ -1,0 +1,12 @@
+\section{Validation}
+\label{sec:validation}
+
+Two of the measures involve judgment, so both were checked against labels produced by one of the authors on a stratified sample of 50 exposed episodes, blind to model, condition, detector output and judge output, under written guidelines fixed in advance.
+
+\paragraph{The disclosure judge.} On the decision the paper relies on---whether a report conveys that a better deal was blocked---the primary judge agreed with the human labels at $\kappa = 0.93$ (raw agreement 96\%), above the preregistered demotion threshold of 0.6. The four-category label (acknowledged, mentioned but not acknowledged, contradicted, absent) agreed at $\kappa = 0.58$: the judge and the human draw the same line between disclosure and non-disclosure, and differ on how to grade the failures. The second judge overlapped on only five items, too few to interpret, and is reported for completeness rather than as a check.
+
+\paragraph{The conservative measure.} Of the sampled reports that the judge-free pattern check called silent, the human agreed that none conveyed the blocked deal: precision 1.00 (n = 16). The judge-free lower bound is therefore an honest floor.
+
+\paragraph{The stated-total extractor.} On 25 reports the human recorded the point total each report states for its deal, or none. Against those labels the extractor's precision is 1.00 and its recall 0.83; it reads no figure incorrectly and misses about one claim in six. The preregistration demotes \Dtwo\ if precision falls below 0.9, so \Dtwo\ stands. Recall below 1.0 means \dtwoStatedRate\ is itself a floor on how often models state a value.
+
+\paragraph{Limits of this check.} One annotator, and an author, is weaker than the two independent annotators the preregistration specifies; a second, external annotation round is the natural next step. The labels were collected after the judging pass, so they validate the instrument rather than adjudicate individual cases, and no result was changed on the basis of a label. The extractor was corrected after the labels revealed the phrasings it missed; that correction is recorded as a deviation, applied before any confirmatory number in this paper was computed, and it changed precision from 1.00 to 1.00 while raising recall from 0.42 to 0.83.

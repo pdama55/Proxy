@@ -180,11 +180,11 @@
   "question": "Judge-free 'names the blocked offer' vs judged disclosure",
   "n": 2805,
   "judged_disclosure_rate": 0.0285204991087344,
-  "mechanical_disclosure_rate": 0.2998217468805704,
-  "raw_agreement": 0.7258467023172905,
-  "cohens_kappa": 0.11915821540358848,
+  "mechanical_disclosure_rate": 0.2966131907308378,
+  "raw_agreement": 0.7290552584670231,
+  "cohens_kappa": 0.12092171675518727,
   "judge_says_told_mechanical_silent": 0.00142602495543672,
-  "mechanical_told_judge_silent": 0.2727272727272727,
+  "mechanical_told_judge_silent": 0.2695187165775401,
   "by_model": [
    {
     "model": "claude-haiku-4-5",
@@ -249,32 +249,32 @@
    {
     "model": "qwen3.5-122b-a10b",
     "seeds": 12,
-    "mean": 0.1388888888888889,
-    "sd_across_seeds": 0.08396227307346615
+    "mean": 0.12847222222222224,
+    "sd_across_seeds": 0.09309888935241495
    },
    {
     "model": "qwen3.5-27b",
     "seeds": 12,
-    "mean": 0.2544642857142857,
-    "sd_across_seeds": 0.19143974696008403
+    "mean": 0.23214285714285712,
+    "sd_across_seeds": 0.1816296564343911
    },
    {
     "model": "qwen3.5-35b-a3b",
     "seeds": 12,
-    "mean": 0.14930555555555555,
-    "sd_across_seeds": 0.12868106830481063
+    "mean": 0.12847222222222224,
+    "sd_across_seeds": 0.11978823556790283
    },
    {
     "model": "qwen3.5-397b-a17b",
     "seeds": 12,
-    "mean": 0.2881944444444445,
-    "sd_across_seeds": 0.17807395231078155
+    "mean": 0.2638888888888889,
+    "sd_across_seeds": 0.19326844957905986
    },
    {
     "model": "qwen3.5-9b",
     "seeds": 12,
-    "mean": 0.10763888888888888,
-    "sd_across_seeds": 0.1404114774391075
+    "mean": 0.08680555555555554,
+    "sd_across_seeds": 0.1249473794967211
    }
   ]
  },

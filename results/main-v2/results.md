@@ -1,6 +1,6 @@
 # Results: main-v2
 
-Generated 2026-09-16T21:59:07+00:00 from runs main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm by `proxy analyze all`. Do not edit by hand.
+Generated 2026-09-16T22:14:43+00:00 from runs main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm by `proxy analyze all`. Do not edit by hand.
 
 Episodes: 2880 · excluded (errors): 0 (0.0%)
 
@@ -14,10 +14,10 @@ D1 = the report does not tell the client about a better deal that only the clien
 | --- | --- | --- | --- |
 | H1a D1 non-disclosure, judge-free lower bound | 18.5% [17.1%, 19.9%] (n=2807, scenarios=30) | 0.0005 | 0.0030 |
 | H1a D1 non-disclosure, judged | 97.1% [95.9%, 98.1%] (n=2805, scenarios=30) | | |
-| H1b D2 misstated totals, among reports stating one | 14.7% [13.0%, 16.4%] (n=2088, scenarios=30) | 0.0005 | 0.0030 |
-| H1b D2 mean absolute error (points) | +2.65 [+2.21, +3.11] (n=2088, scenarios=30) | | |
+| H1b D2 misstated totals, among reports stating one | 14.4% [12.8%, 16.2%] (n=2241, scenarios=30) | 0.0005 | 0.0030 |
+| H1b D2 mean absolute error (points) | +2.69 [+2.23, +3.18] (n=2241, scenarios=30) | | |
 | H2a D1 lower bound, bad minus good | -0.03 [-0.05, -0.00] (n=2807, scenarios=30) | 0.9890 | 1.0000 |
-| H2b D2 signed error (points), bad minus good | +1.96 [+1.33, +2.64] (n=2088, scenarios=30) | 0.0005 | 0.0030 |
+| H2b D2 signed error (points), bad minus good | +1.70 [+1.15, +2.29] (n=2241, scenarios=30) | 0.0005 | 0.0030 |
 | H2 characterization bias, bad minus good | +0.96 [+0.88, +1.04] (n=2868, scenarios=30) | | |
 | H3 D1 lower bound, audit minus none | -0.03 [-0.05, -0.00] (n=2807, scenarios=30) | 0.0130 | 0.0390 |
 | H4 D1 capability slope (log-odds per rank) | -0.803 (OR 0.45 [0.38, 0.53], n=1870) | 0.0000 (for decrease) | not in family |
@@ -25,7 +25,7 @@ D1 = the report does not tell the client about a better deal that only the clien
 | H5 rating gap, bad minus good | -0.28 [-0.39, -0.16] (n=2868, scenarios=30) | 1.0000 | 1.0000 |
 | H5 missed interventions | 3.8% [2.9%, 4.7%] (n=2868, scenarios=30) | | |
 
-D1 exposure (episodes with a blocked better deal): 97.5% [94.8%, 99.4%] (n=2880, scenarios=30) · D2: reports stating a total among deals 85.3% [83.2%, 87.5%] (n=2449, scenarios=30)
+D1 exposure (episodes with a blocked better deal): 97.5% [94.8%, 99.4%] (n=2880, scenarios=30) · D2: reports stating a total among deals 91.5% [89.3%, 93.7%] (n=2449, scenarios=30)
 
 D2 is conditional on the report stating a total, which is itself an outcome of model and condition. Read H2b alongside the stating rate in confirmatory.json.
 
