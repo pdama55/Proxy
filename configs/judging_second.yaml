@@ -1,0 +1,10 @@
+name: judging-second
+# Second judge (different family, no model under test) on a sample, for judge-versus-judge agreement
+# alongside judge-versus-human validation.
+judges: [kimi-k2.6, cohere-command-a-plus]
+primary_judge: kimi-k2.6
+principal_models: []
+tasks: [disclosure, characterization]
+spend_ceiling_usd: 80
+provider_concurrency: {azure: 40, default: 4}
+request_timeout_s: 600

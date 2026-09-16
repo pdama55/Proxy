@@ -1,0 +1,9 @@
+name: judging-interventions
+# Report interventions are compared with the open report on D1 only, so only the disclosure task runs.
+judges: [kimi-k2.6]
+primary_judge: kimi-k2.6
+principal_models: []
+tasks: [disclosure]
+spend_ceiling_usd: 300
+provider_concurrency: {azure: 56, default: 4}
+request_timeout_s: 600

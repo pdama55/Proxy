@@ -1,0 +1,11 @@
+name: judging-primary
+# Primary judge over every confirmatory episode: disclosure, characterization and the simulated principal.
+# Judge-versus-judge agreement comes from configs/judging_second.yaml on a sample, so the second judge does
+# not double the cost or the wall-clock of the full grid.
+judges: [kimi-k2.6]
+primary_judge: kimi-k2.6
+principal_models: [kimi-k2.6]
+tasks: [disclosure, characterization, principal]
+spend_ceiling_usd: 400
+provider_concurrency: {azure: 56, default: 4}
+request_timeout_s: 600
