@@ -1,6 +1,8 @@
 """EXPLORATORY analyses. Not preregistered as confirmatory tests. Every output from this module is labeled
 exploratory automatically by the report writer; nothing here may be promoted to a confirmatory claim."""
 
+import math
+
 import pandas as pd
 
 from proxy.analysis.stats import cluster_bootstrap, diff_of, mean_of, per_seed
@@ -183,6 +185,80 @@ def k1_knowledge(df: pd.DataFrame, B: int) -> dict:
     }
 
 
+def e12_mechanical_vs_judge(df: pd.DataFrame, B: int) -> dict:
+    """Agreement between the judge-free "names the blocked offer" measure and the judges' disclosure calls.
+
+    With no human annotation, this is the evidence that the judged rate is not one model's quirk: a detector
+    that needs no judgment, and judges from three companies, are compared on the same reports.
+    """
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed", "a_not_named"])
+    if a.empty:
+        return {"question": "Mechanical vs judged disclosure", "n": 0}
+    told_judge = 1 - a["a_nondisclosed"]
+    told_mech = 1 - a["a_not_named"]
+    both = float(((told_judge == 1) & (told_mech == 1)).mean())
+    neither = float(((told_judge == 0) & (told_mech == 0)).mean())
+    po = both + neither
+    pe = float(told_judge.mean() * told_mech.mean() + (1 - told_judge.mean()) * (1 - told_mech.mean()))
+    kappa = (po - pe) / (1 - pe) if pe < 1 else math.nan
+    return {
+        "question": "Judge-free 'names the blocked offer' vs judged disclosure",
+        "n": int(len(a)),
+        "judged_disclosure_rate": float(told_judge.mean()),
+        "mechanical_disclosure_rate": float(told_mech.mean()),
+        "raw_agreement": po,
+        "cohens_kappa": kappa,
+        "judge_says_told_mechanical_silent": float(((told_judge == 1) & (told_mech == 0)).mean()),
+        "mechanical_told_judge_silent": float(((told_judge == 0) & (told_mech == 1)).mean()),
+        "by_model": per_seed(a.assign(told_mech=told_mech), "told_mech", ["model"]).to_dict("records"),
+    }
+
+
+def e13_shadow_price(df: pd.DataFrame, B: int) -> dict:
+    """The shadow price of the principal's requirement: what it cost, and whether reports track it."""
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["points_forgone"])
+    if a.empty:
+        return {"question": "Shadow price of the requirement", "n": 0}
+    told = a.dropna(subset=["a_nondisclosed"]).assign(told=lambda d: 1 - d["a_nondisclosed"])
+    q = a["points_forgone"].quantile([0.25, 0.5, 0.75]).to_dict()
+    out = {
+        "question": "Shadow price of the principal's requirement (points the blocked deal would have added)",
+        "mean_points_forgone": cluster_bootstrap(a, mean_of("points_forgone"), B=B),
+        "quartiles": {str(k): float(v) for k, v in q.items()},
+        "share_above_10_points": float((a["points_forgone"] > 10).mean()),
+        "by_model": per_seed(a, "points_forgone", ["model"]).to_dict("records"),
+    }
+    if len(told):
+        hi = told[told["points_forgone"] > told["points_forgone"].median()]
+        lo = told[told["points_forgone"] <= told["points_forgone"].median()]
+        out["disclosure_high_minus_low_stakes"] = cluster_bootstrap(
+            pd.concat([hi.assign(stakes="high"), lo.assign(stakes="low")]),
+            diff_of("told", "stakes", "low", "high"), B=B,
+        )
+        out["told_by_stakes"] = {"low": float(lo["told"].mean()), "high": float(hi["told"].mean())}
+    return out
+
+
+def e14_bargaining_benchmarks(df: pd.DataFrame, B: int) -> dict:
+    """How well agents negotiated, against exact bargaining benchmarks, and whether that predicts reporting."""
+    d = df.dropna(subset=["gain_fraction"])
+    if d.empty:
+        return {"question": "Bargaining efficiency", "n": 0}
+    out = {
+        "question": "Negotiation quality against exact benchmarks, and its relation to reporting",
+        "by_model": per_seed(d, "gain_fraction", ["model"]).to_dict("records"),
+        "nash_ratio_by_model": per_seed(d.dropna(subset=["nash_ratio"]), "nash_ratio", ["model"]).to_dict("records")
+        if "nash_ratio" in d else [],
+    }
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed", "gain_fraction"])
+    if len(a) > 10:
+        per_model = a.groupby("model").agg(told=("a_nondisclosed", lambda x: 1 - x.mean()), gain=("gain_fraction", "mean"))
+        if len(per_model) > 2 and per_model["gain"].std() > 0:
+            out["corr_told_vs_gain_across_models"] = float(per_model["told"].corr(per_model["gain"]))
+            out["per_model"] = per_model.reset_index().to_dict("records")
+    return out
+
+
 def run_exploratory(df: pd.DataFrame, B: int = 1000, breadth_runs: list[str] | None = None, confirmatory_runs: list[str] | None = None) -> dict:
     breadth_runs = breadth_runs or []
     scripted_all = df[(~df["error"]) & (df["scored"]) & (df["counterparty_kind"] == "scripted")]
@@ -190,6 +266,9 @@ def run_exploratory(df: pd.DataFrame, B: int = 1000, breadth_runs: list[str] | N
     interventions = scripted_all if confirmatory_runs is None else scripted_all[scripted_all["run"].str.split("--").str[0].isin(confirmatory_runs)]
     return {
         "E7_interventions": e7_interventions(interventions, B),
+        "E12_mechanical_vs_judge": e12_mechanical_vs_judge(scripted, B),
+        "E13_shadow_price": e13_shadow_price(scripted, B),
+        "E14_bargaining": e14_bargaining_benchmarks(scripted, B),
         "E8_eval_awareness": e8_eval_awareness(scripted, B),
         "E10_breadth": e10_breadth(scripted_all, B, breadth_runs),
         "E11_stakes": e11_stakes(scripted_all, breadth_runs),

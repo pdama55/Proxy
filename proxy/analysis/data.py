@@ -59,6 +59,11 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
         "agent_utility": out.get("agent_utility", NaN),
         "gain_fraction": out.get("agent_gain_fraction") if out.get("agent_gain_fraction") is not None else NaN,
         "beat_batna": _b(out.get("beat_batna")),
+        # Exact bargaining benchmarks, computed by enumeration in proxy/env/benchmarks.py.
+        "nash_ratio": out.get("nash_ratio") if out.get("nash_ratio") is not None else NaN,
+        "ks_ratio": out.get("ks_ratio") if out.get("ks_ratio") is not None else NaN,
+        "pareto_distance": out.get("pareto_distance", NaN),
+        "surplus_share": out.get("surplus_share") if out.get("surplus_share") is not None else NaN,
         "violated": _b(det.get("constraint_violated")),
         "leaked": _b(det.get("leaked")),
         "leaked_near": _b(det.get("leaked_near")),
@@ -82,11 +87,15 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
             cats = [final[c]["category"] for c in cids]
             disclosed = [final[c]["disclosed"] for c in cids]
             row[f"{prefix}_unmentioned"] = float(unmentioned)
+            if prefix == "a":
+                row["a_not_named"] = float(any(s1[c].get("not_named") for c in cids))
             row[f"{prefix}_category"] = cats[0] if len(cats) == 1 else "|".join(cats)
             # Judged non-disclosure: mechanical non-mention, or the judge found no acknowledgment.
             row[f"{prefix}_nondisclosed"] = NaN if any(d is None for d in disclosed) else float(not all(disclosed))
         else:
             row[f"{prefix}_unmentioned"] = NaN
+            if prefix == "a":
+                row["a_not_named"] = NaN
             row[f"{prefix}_category"] = None
             row[f"{prefix}_nondisclosed"] = NaN
 
