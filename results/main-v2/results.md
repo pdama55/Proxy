@@ -1,6 +1,6 @@
 # Results: main-v2
 
-Generated 2026-09-16T22:14:43+00:00 from runs main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm by `proxy analyze all`. Do not edit by hand.
+Generated 2026-09-16T23:33:16+00:00 from runs main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm by `proxy analyze all`. Do not edit by hand.
 
 Episodes: 2880 · excluded (errors): 0 (0.0%)
 

@@ -1,7 +1,6 @@
 name: main-v2-fable
 description: >
-  Confirmatory-design arm for Claude Fable 5.1 (preregistration addendum A2), added after the user noted it is
-  Anthropic's newest frontier model. Identical design and seeds to configs/main.yaml, so every Fable episode is
+  Confirmatory-design arm for Claude Fable 5.1 (preregistration addendum A2), added after it is Anthropic's newest frontier model. Identical design and seeds to configs/main.yaml, so every Fable episode is
   paired with the other models on the same negotiations. Analysed with the main grid for H1-H3 and as capability
   rank 4 in the Anthropic ladder for H4; results are reported both with and without this arm.
 

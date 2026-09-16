@@ -38,6 +38,49 @@ def _good_bad(d: pd.DataFrame) -> pd.DataFrame:
     return d[d["outcome_target"].isin(["good", "bad"])]
 
 
+def unconditional_and_bounds(df: pd.DataFrame, B: int) -> dict:
+    """Conditioning on exposure, or on whether a report states a total, is post-treatment: the manipulations
+    can move those gates. These estimands avoid that.
+
+    - Unconditional non-disclosure: over all non-error episodes, the share that were exposed AND did not
+      convey the blocked deal. Exposure is near-universal by design, so this tracks the conditional rate
+      while remaining a proper share of the assigned sample.
+    - Manski worst-case bounds on the conditional rate: unexposed episodes are counted first as disclosures
+      and then as non-disclosures, giving the interval any selection story must lie inside.
+    - The same treatment for D2, where the gate (stating a total at all) is far from universal.
+    """
+    ok = df.dropna(subset=["blocked_alt"])
+    a = ok[(ok["blocked_alt"] == 1.0) & ok["a_nondisclosed"].notna()]
+    n_all = len(ok)
+    out = {
+        "note": "Estimands that do not condition on a post-treatment gate.",
+        "unconditional_nondisclosure": cluster_bootstrap(
+            ok.assign(unc=(ok["blocked_alt"] == 1.0) & (ok["a_nondisclosed"] == 1.0)).astype({"unc": float}),
+            mean_of("unc"), B=B),
+        "exposure_rate": cluster_bootstrap(ok, mean_of("blocked_alt"), B=B),
+    }
+    if n_all and len(a):
+        share_gated = len(a) / n_all
+        rate = a["a_nondisclosed"].mean()
+        out["manski_bounds_conditional"] = {
+            "lower": float(rate * share_gated),
+            "upper": float(rate * share_gated + (1 - share_gated)),
+            "ungated_share": float(1 - share_gated),
+        }
+    s = df.dropna(subset=["deal"])
+    deals = s[s["deal"] == 1.0]
+    stated = deals.dropna(subset=["total_misstated"])
+    if len(deals):
+        share = len(stated) / len(deals)
+        rate = stated["total_misstated"].mean() if len(stated) else math.nan
+        out["dtwo_unconditional_misstated"] = cluster_bootstrap(
+            deals.assign(unc=deals.index.isin(stated[stated["total_misstated"] == 1.0].index).astype(float)),
+            mean_of("unc"), B=B)
+        out["dtwo_manski_bounds"] = {"lower": float(rate * share), "upper": float(rate * share + (1 - share)),
+                                     "unstated_share": float(1 - share)}
+    return out
+
+
 def h1(df: pd.DataFrame, B: int) -> dict:
     a, s = blocked(df), stated(df)
     deals = df[df["deal"] == 1.0]
@@ -162,7 +205,8 @@ def h5(df: pd.DataFrame, B: int) -> dict:
 
 def run_confirmatory(df: pd.DataFrame, B: int = 2000) -> dict:
     main = df[(~df["error"]) & (df["scored"]) & (df["counterparty_kind"] == "scripted")]
-    results = {"H1": h1(main, B), "H2": h2(main, B), "H3": h3(main, B), "H4": h4(main, B), "H5": h5(main, B)}
+    results = {"H1": h1(main, B), "H2": h2(main, B), "H3": h3(main, B), "H4": h4(main, B), "H5": h5(main, B),
+               "unconditional": unconditional_and_bounds(main, B)}
     # Holm correction over the tests that predict an effect. H4 predicts the absence of one (no decrease with
     # capability), so a small p would count against it; it is reported uncorrected with that caveat.
     family = {
