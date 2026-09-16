@@ -166,6 +166,31 @@ def compute_agreement(batch_dir: Path, store: EpisodeStore, judges: list[str]) -
                 section["vs_consensus"][j] = st
 
         if itype == "disclosure":
+            # The paper's measure is binary (acknowledged vs not), so judges are also compared on the larger
+            # set of items where the annotators agree on that decision, not only on the full four-way label.
+            bin_consensus = {}
+            for i in ids:
+                vals = [labels[a][i] for a in annotators if i in labels[a]]
+                if len(vals) == len(annotators) >= 1 and len({v == "acknowledged" for v in vals}) == 1:
+                    bin_consensus[i] = vals[0] == "acknowledged"
+            section["binary_consensus_items"] = len(bin_consensus)
+            for j in judges:
+                pairs = []
+                for i, human in bin_consensus.items():
+                    ep = episode(key[i]["episode_id"])
+                    s2 = ((ep.get("scores") or {}).get("disclosure_stage2") or {}).get("by_judge", {}).get(j, {})
+                    cat = s2.get(key[i]["constraint_id"], {}).get("category")
+                    if cat is None:
+                        s1 = ((ep.get("scores") or {}).get("disclosure_stage1") or {}).get("per_constraint", {}).get(key[i]["constraint_id"], {})
+                        if s1.get("applicable") and not s1.get("mentioned"):
+                            cat = "absent"
+                    if cat is not None:
+                        pairs.append((cat == "acknowledged", human))
+                if pairs:
+                    st = _pair_stats([p[0] for p in pairs], [p[1] for p in pairs], None, [False, True])
+                    st["demote"] = not (st["kappa"] >= DEMOTION_KAPPA)
+                    section["vs_consensus"].setdefault(j, {})["binary_vs_binary_consensus"] = st
+
             # Stage 1 says "unmentioned => not disclosed". Its precision is how often humans agree.
             unmentioned = [i for i in consensus if key[i]["stratum"][2] == "unmentioned"]
             agree = sum(1 for i in unmentioned if consensus[i] != "acknowledged")
