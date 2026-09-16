@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from proxy.analysis.data import load_frame  # noqa: E402
 from proxy.analysis.paper_figures import paper_figures  # noqa: E402
-from proxy.analysis.paper_numbers import write_numbers  # noqa: E402
+from proxy.analysis.paper_numbers import per_model_table, write_numbers  # noqa: E402
 from proxy.analysis.report import AnalysisConfig  # noqa: E402
 from proxy.config import load_models  # noqa: E402
 from proxy.store import EpisodeStore  # noqa: E402
@@ -72,6 +72,8 @@ def main(config: str = "configs/analysis.yaml") -> None:
     # Figures get the full frame: paper_figures keeps report variants out of the headline figures itself and
     # needs them for the intervention comparison.
     scored = df[(~df["error"]) & (df["run"].isin((cfg.confirmatory_runs or []) + [f"{r}--{v}" for r in (cfg.confirmatory_runs or []) for v in ("tradeoffs", "norm")]))]
+    (ROOT / "paper" / "tables").mkdir(exist_ok=True)
+    (ROOT / "paper" / "tables" / "per_model.tex").write_text(per_model_table(confirmatory) + "\n")
     print("figures:", [p.name for p in paper_figures(scored, ROOT / "paper" / "figures")])
     subprocess.run(["tectonic", "-X", "compile", "main.tex"], cwd=ROOT / "paper", check=True)
     print("built", ROOT / "paper" / "main.pdf")

@@ -125,3 +125,38 @@ def write_numbers(df: pd.DataFrame, path: Path, calibration: dict | None = None,
 
 
 __all__ = ["numbers", "write_numbers", "reference_calibration", "DISPLAY"]
+
+
+def per_model_table(df: pd.DataFrame) -> str:
+    """LaTeX table: one row per model, the measures the paper reports model by model."""
+    from proxy.analysis.stats import cluster_bootstrap, mean_of
+
+    ok = df[~df["error"]]
+    a = ok[ok["blocked_alt"] == 1.0]
+    rows = []
+    for model, g in ok.groupby("model"):
+        ga = a[a["model"] == model]
+        gj = ga.dropna(subset=["a_nondisclosed"])
+        gn = ga.dropna(subset=["a_not_named"])
+        gs = ok[ok["model"] == model].dropna(subset=["total_misstated"])
+        silent = gj[gj["a_nondisclosed"] == 1.0].dropna(subset=["probe_knew"])
+        if not len(gj):
+            continue
+        ci = cluster_bootstrap(gj, mean_of("a_nondisclosed"), B=1000)
+        shown = DISPLAY.get(model)
+        name = shown[0] if isinstance(shown, (tuple, list)) else (shown or model)
+        family = shown[1] if isinstance(shown, (tuple, list)) and len(shown) > 1 else g["family"].iloc[0]
+        rows.append((
+            name, family, len(gj),
+            f"{100 * ci['estimate']:.0f} [{100 * ci['ci95'][0]:.0f}, {100 * ci['ci95'][1]:.0f}]",
+            f"{100 * ga['a_unmentioned'].mean():.0f}",
+            f"{100 * (1 - gn['a_not_named'].mean()):.0f}" if len(gn) else "--",
+            f"{100 * gs['total_misstated'].mean():.0f}" if len(gs) else "--",
+            f"{100 * silent['probe_knew'].mean():.0f}" if len(silent) else "--",
+        ))
+    rows.sort(key=lambda r: (r[1], -float(r[3].split(" ")[0])))
+    head = (r"\begin{tabular}{llrrrrrr}" "\n" r"\toprule" "\n"
+            r"Model & Family & $n$ & Non-disclosed [95\% CI] & No offer & Names it & Total wrong & Knew \\" "\n"
+            r"\midrule")
+    body = "\n".join(" & ".join(str(c) for c in r) + r" \\" for r in rows)
+    return f"{head}\n{body}\n\\bottomrule\n\\end{{tabular}}"
