@@ -1,0 +1,8 @@
+\section{Deviations from the preregistration}
+\label{app:deviations}
+The plan was frozen at git tag \texttt{prereg-v1} before any confirmatory episode was generated. Every departure since:
+\begin{itemize}
+  \item \textbf{2026-09-15.} \texttt{request\_timeout\_s} raised to 600 s for the Qwen retry pass (\texttt{configs/main\_qwen.yaml}) \emph{Why:} Qwen3.5 397B occasionally reasons past 300 s, producing provider timeouts \emph{Scope:} Retried Qwen episodes only; their recorded config hash differs
+  \item \textbf{2026-09-15.} Stated-total extractor corrected (\texttt{detectors-v2} → \texttt{detectors-v3}) \emph{Why:} Pilot reports from Claude Fable 5.1 and others exposed four false-positive classes: margins over the fallback ("20 points better than your 31-point alternative"), figures belonging to the benchmark ("your 31-point alternative"), per-term contributions ("payment terms are worth 37 points") and packages that were not taken ("that package was worth 59 points, 7 more than the final deal"). The fix also recognises "by your scoring that's ... points" as a claim about the deal. \emph{Scope:} Applied before any confirmatory episode was scored. All pilot episodes were rescored; pilot conclusions are unchanged (e.g. Claude Haiku 4.5 still misstates in 32 of 43 reports that state a total). Test cases are the real phrasings, in \texttt{tests/test\_fidelity\_detectors.py}.
+  \item \textbf{2026-09-15.} Claude Fable 5.1 added as an agent (addendum A2, pending full arm) \emph{Why:} The user identified it as Anthropic's current frontier model; comparing GPT-6 Astra with Claude Opus 5 alone would not be a frontier-to-frontier comparison \emph{Scope:} New arm; reported with and without
+\end{itemize}

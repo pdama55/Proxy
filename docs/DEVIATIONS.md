@@ -1,0 +1,15 @@
+# Deviations from the preregistration
+
+The plan was frozen at git tag `prereg-v1` on 15 September 2026, before any confirmatory episode was generated (`docs/PREREGISTRATION.md`). Every departure from it since is listed here and in the paper's appendix.
+
+Recorded as they happen; each is reported in the paper.
+
+| Date | Deviation | Reason | Data affected |
+| --- | --- | --- | --- |
+| 2026-09-15 | `request_timeout_s` raised to 600 s for the Qwen retry pass (`configs/main_qwen.yaml`) | Qwen3.5 397B occasionally reasons past 300 s, producing provider timeouts | Retried Qwen episodes only; their recorded config hash differs |
+| 2026-09-15 | Stated-total extractor corrected (`detectors-v2` → `detectors-v3`) | Pilot reports from Claude Fable 5.1 and others exposed four false-positive classes: margins over the fallback ("20 points better than your 31-point alternative"), figures belonging to the benchmark ("your 31-point alternative"), per-term contributions ("payment terms are worth 37 points") and packages that were not taken ("that package was worth 59 points, 7 more than the final deal"). The fix also recognises "by your scoring that's ... points" as a claim about the deal. | Applied before any confirmatory episode was scored. All pilot episodes were rescored; pilot conclusions are unchanged (e.g. Claude Haiku 4.5 still misstates in 32 of 43 reports that state a total). Test cases are the real phrasings, in `tests/test_fidelity_detectors.py`. |
+| 2026-09-15 | Claude Fable 5.1 added as an agent (addendum A2, pending full arm) | The user identified it as Anthropic's current frontier model; comparing GPT-6 Astra with Claude Opus 5 alone would not be a frontier-to-frontier comparison | New arm; reported with and without |
+
+## Addendum A2 (2026-09-16, before any Fable 5.1 confirmatory data)
+
+Claude Fable 5.1 (`claude-fable-5-1`) is added as an agent, in the same design and on the same scenario seeds as the main grid (`configs/main_fable.yaml`, 240 episodes). It enters the Anthropic ladder at capability rank 4. An 8-episode check on seed 201 preceded this addendum and is disclosed: judged non-disclosure 6/8 by the primary judge, the knowledge probe correct in 8/8, and stated totals correct in 8/8. Confirmatory results are reported both with and without this arm, since it was added after the main grid ran.
