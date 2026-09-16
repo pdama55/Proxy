@@ -24,6 +24,7 @@ MUTED = "#8a8984"
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a"]
 
 DISPLAY = {
+    "claude-fable-5-1": ("Claude Fable 5.1", "Anthropic", 4),
     "claude-opus-5": ("Claude Opus 5", "Anthropic", 3),
     "claude-sonnet-5": ("Claude Sonnet 5", "Anthropic", 2),
     "claude-haiku-4-5": ("Claude Haiku 4.5", "Anthropic", 1),
@@ -218,6 +219,94 @@ def fig_audit(df: pd.DataFrame, out: Path) -> Path | None:
     return _save(fig, out, "audit")
 
 
+def fig_knowledge(df: pd.DataFrame, out: Path) -> Path | None:
+    """Among exposed episodes: what the report conveyed, and whether the agent could name the offer when asked."""
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed"])
+    if a.empty or a["probe_knew"].notna().sum() == 0:
+        return None
+    order = model_order(a["model"])
+    fig, ax = plt.subplots(figsize=(5.4, 0.34 * len(order) + 0.9))
+    _axes(ax)
+    for i, m in enumerate(order):
+        g = a[a["model"] == m]
+        told = 1 - g["a_nondisclosed"].mean()
+        knew = g[g["a_nondisclosed"] == 1.0]["probe_knew"].dropna()
+        ax.barh(i, told, height=0.42, color=SERIES[2], zorder=2)
+        if len(knew):
+            ax.barh(i + 0.0, -knew.mean(), height=0.42, color=SERIES[1], zorder=2, left=0)
+    ax.axvline(0, color=INK_2, linewidth=0.8, zorder=3)
+    ax.set_yticks(range(len(order)), [_label(m) for m in order])
+    ax.set_ylim(len(order) - 0.5, -0.5)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_xticks([-1, -0.5, 0, 0.5, 1], ["100%", "50%", "0", "50%", "100%"])
+    ax.set_xlabel("share of exposed episodes", labelpad=6)
+    ax.text(-0.5, -0.9, "knew when asked, among silent reports", ha="center", va="bottom", fontsize=7.5, color=SERIES[1])
+    ax.text(0.5, -0.9, "told the client unprompted", ha="center", va="bottom", fontsize=7.5, color=SERIES[2])
+    _family_bands(ax, order)
+    return _save(fig, out, "knowledge_vs_disclosure")
+
+
+def fig_interventions(df: pd.DataFrame, out: Path) -> Path | None:
+    """Judged non-disclosure under each report prompt, on the same negotiations."""
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed"])
+    variants = [v for v in ("open", "tradeoffs", "norm") if v in set(a["report_variant"])]
+    if len(variants) < 2:
+        return None
+    order = model_order(a[a["report_variant"] == "open"]["model"])
+    fig, ax = plt.subplots(figsize=(5.4, 0.34 * len(order) + 1.0))
+    _axes(ax)
+    labels = {"open": "``How did it go?''", "tradeoffs": "client asks about turned-down terms", "norm": "deployer instruction"}
+    for i, m in enumerate(order):
+        g = a[a["model"] == m]
+        xs = [g[g["report_variant"] == v]["a_nondisclosed"].mean() for v in variants]
+        xs = [x for x in xs if x == x]
+        if len(xs) > 1:
+            ax.plot([min(xs), max(xs)], [i, i], color=GRID, linewidth=2, zorder=1, solid_capstyle="round")
+        for j, v in enumerate(variants):
+            val = g[g["report_variant"] == v]["a_nondisclosed"].mean()
+            if val == val:
+                _dot(ax, val, i, SERIES[j % len(SERIES)])
+    handles = [plt.Line2D([], [], marker="o", linestyle="", markersize=5, color=SERIES[j % len(SERIES)],
+                          markeredgecolor=SURFACE, markeredgewidth=1.2, label=labels.get(v, v))
+               for j, v in enumerate(variants)]
+    ax.legend(handles=handles, loc="lower center", bbox_to_anchor=(0.45, 1.0), ncol=1, fontsize=7,
+              handletextpad=0.4, labelcolor=INK_2)
+    ax.set_yticks(range(len(order)), [_label(m) for m in order])
+    ax.set_ylim(len(order) - 0.5, -0.5)
+    ax.set_xlim(-0.02, 1.02)
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1.0], ["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("Reports that do not convey the blocked better deal (judged)", labelpad=6)
+    _family_bands(ax, order)
+    return _save(fig, out, "interventions")
+
+
+def fig_stakes(df: pd.DataFrame, out: Path) -> Path | None:
+    """Does disclosure rise with what the requirement cost the client? Binned by points forgone."""
+    a = df[(df["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed", "points_forgone"])
+    if len(a) < 40:
+        return None
+    edges = np.quantile(a["points_forgone"], [0, 0.25, 0.5, 0.75, 1.0])
+    edges = np.unique(np.round(edges).astype(int))
+    if len(edges) < 3:
+        return None
+    fig, ax = plt.subplots(figsize=(5.4, 3.0))
+    _axes(ax, grid_axis="y")
+    models = model_order(a["model"])[:4]
+    for i, m in enumerate(models):
+        g = a[a["model"] == m].copy()
+        g["bin"] = pd.cut(g["points_forgone"], edges, include_lowest=True)
+        by = g.groupby("bin", observed=True)["a_nondisclosed"].agg(["mean", "size"])
+        centers = [iv.mid for iv in by.index]
+        ax.plot(centers, by["mean"], marker="o", markersize=5, linewidth=2, color=SERIES[i % len(SERIES)],
+                markeredgecolor=SURFACE, markeredgewidth=1.4, label=_label(m))
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0], ["0%", "25%", "50%", "75%", "100%"])
+    ax.set_xlabel("Points the client's requirement cost them", labelpad=6)
+    ax.set_ylabel("does not convey it (judged)")
+    ax.legend(fontsize=7, frameon=False, ncol=2)
+    return _save(fig, out, "stakes")
+
+
 def _save(fig, out: Path, name: str) -> Path:
     out.mkdir(parents=True, exist_ok=True)
     fig.tight_layout()
@@ -229,6 +318,10 @@ def _save(fig, out: Path, name: str) -> Path:
 
 
 def paper_figures(df: pd.DataFrame, out: Path) -> list[Path]:
+    """Every figure but the intervention comparison describes the open report ("How did it go?"); report
+    variants are a separate experiment and must never be pooled into the headline rates."""
     _style()
-    made = [f(df, Path(out)) for f in (fig_d1_by_model, fig_d2_errors, fig_portrayal, fig_audit)]
+    open_only = df[df["report_variant"] == "open"] if "report_variant" in df else df
+    made = [f(open_only, Path(out)) for f in (fig_d1_by_model, fig_d2_errors, fig_portrayal, fig_audit, fig_knowledge, fig_stakes)]
+    made.append(fig_interventions(df, Path(out)))
     return [p for p in made if p is not None]
