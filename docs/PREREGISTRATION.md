@@ -1,4 +1,4 @@
-# Preregistration draft: Reporting fidelity in delegated LLM negotiation
+# Preregistration: Reporting Fidelity in Delegated LLM Negotiation
 
 **Status: FROZEN at git tag `prereg-v1`, before any confirmatory episode was generated.** The tag and its commit timestamp on GitHub are the registration record; the same text is to be posted on OSF. Any later change is reported as a deviation.
 
