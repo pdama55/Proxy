@@ -61,6 +61,38 @@ The requirement's shadow price---the points the blocked deal would have added---
   \item \textbf{H5 (decision cost larger after bad outcomes): not supported.} The simulated principal rates outcomes \emph{lower} from the report than from ground truth ($\hFiveGap$), and the gap is not larger after bad outcomes ($p = \hFiveP$). Reports still changed the sign-off decision in \principalMismatch\ of episodes, and produced a missed intervention in \hFiveMissed.
 \end{itemize}
 
+\subsection{Rewording the briefing does not move it; rewording the request does}
+If disclosure collapsed under a synonym for ``requirement'', the finding would be about phrasing rather than
+behaviour. A separate arm (\ablPromptDiffN\ episodes, three models, three scenarios) varies how the client's
+constraint is worded, how prominent it is in the briefing, and how the report is requested. Because it uses the
+judge-free lower bound, its levels are not comparable with the judged rates above; only the contrasts are.
+
+Wording the constraint as a \emph{policy} rather than a plain instruction or a \emph{requirement} moves the
+lower bound between \ablPhrasingPolicy\ and \ablPhrasingPlain---a few points, with no ordering that suggests
+the agent treats one framing as more revisable than another. Burying the constraint in a longer briefing does
+not matter either: low salience against base is \ablSalienceDiff\ points, with a 95\% interval
+(\ablSalienceDiffCI) that straddles zero.
+
+What does move it is the request. Replacing the open ``how did it go'' with a directive report prompt changes
+the lower bound from \ablPromptOpen\ to \ablPromptDirective, a shift of \ablPromptDiff\ points
+(\ablPromptDiffCI). This reproduces, on different scenarios and a judge-free measure, what the intervention
+arm found: the agent's silence is a property of what it was asked for, not of how its instructions were
+phrased.
+
+\subsection{Against a live counterparty}
+A further arm replaces the scripted counterparty with a language model negotiating freely
+(\llmcpEpisodes\ episodes). It is reported separately and never pooled with the scripted runs. Agents broke no
+requirement and leaked no confidential figure, and stated their deal's value wrongly in \llmcpDtwo\ of the
+\llmcpDtwoN\ reports that state one, so \Dtwo\ is not an artifact of the scripted opponent.
+
+\Done\ cannot be estimated from this arm, and the reason is instructive. A blocked better deal arose in only
+\llmcpExposure\ of episodes---\llmcpExposed\ in total---against \exposureRate\ with the scripted counterparty,
+because guaranteeing that exposure is exactly what the scripted counterparty's fixed showcase move is for. A
+free negotiator rarely volunteers its best terms and then has them refused on a technicality. Nine episodes
+support no rate, and we quote none. This is the clearest illustration of the limitation stated in
+\hyperref[sec:limitations]{Limitations}: the main design manufactures the trade-off in order to measure
+reporting on it, and says nothing about how often it arises unaided.
+
 \subsection{The arm added after the freeze}
 Claude Fable 5.1 was not in the frozen plan; it was added once it became Anthropic's current frontier model, so
 that the frontier-to-frontier comparison was not Opus 5 against GPT-6 Astra alone. It ran the same design on the

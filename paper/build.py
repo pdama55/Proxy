@@ -212,6 +212,32 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     if len(fr):
         by = fr.groupby("model")["total_misstated"].mean()
         m["dtwoFrontierRange"] = f"{100 * by.min():.0f}--{100 * by.max():.0f}\\%"
+    # Ablations: does the finding survive rewording the briefing?
+    e4 = e.get("E4_ablations") or {}
+    for row in e4.get("phrasing_D1") or []:
+        m[f"ablPhrasing{row['phrasing'].capitalize()}"] = pct(row["mean"], 1)
+    for row in e4.get("briefing_variant_D1") or []:
+        m[f"ablSalience{row['briefing_variant'].replace('_', '').capitalize()}"] = pct(row["mean"], 1)
+    for row in e4.get("report_variant_D1") or []:
+        m[f"ablPrompt{row['report_variant'].capitalize()}"] = pct(row["mean"], 1)
+    for key, name in (("low_salience_minus_base_D1", "ablSalienceDiff"), ("directive_minus_open_D1", "ablPromptDiff")):
+        v = e4.get(key)
+        if v:
+            m[name] = f"{100 * v['estimate']:+.1f}"
+            m[f"{name}CI"] = f"{100 * v['ci95'][0]:+.1f} to {100 * v['ci95'][1]:+.1f}"
+            m[f"{name}N"] = str(v.get("n", ""))
+    # LLM-counterparty arm: reported separately, never pooled with the scripted runs.
+    e5 = e.get("E5_llm_counterparty") or {}
+    if e5.get("episodes"):
+        m["llmcpEpisodes"] = str(e5["episodes"])
+        ex = e5.get("blocked_alternative_exposure") or {}
+        if ex.get("estimate") is not None:
+            m["llmcpExposure"] = pct(ex["estimate"], 1)
+            m["llmcpExposed"] = str((e5.get("blocked_alternative_lower_bound") or {}).get("n", ""))
+        dt = e5.get("stated_total_misstatement") or {}
+        if dt.get("estimate") is not None:
+            m["llmcpDtwo"] = pct(dt["estimate"], 1)
+            m["llmcpDtwoN"] = str(dt.get("n", ""))
     opus = (e.get("E11_stakes", {}).get("by_model") or {}).get("claude-opus-5") or {}
     if opus.get("p") is not None:
         m["stakesOpusP"] = f"{opus['p']:.2f}".lstrip("0")

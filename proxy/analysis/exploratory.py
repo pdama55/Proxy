@@ -264,6 +264,12 @@ def run_exploratory(df: pd.DataFrame, B: int = 1000, breadth_runs: list[str] | N
     scripted_all = df[(~df["error"]) & (df["scored"]) & (df["counterparty_kind"] == "scripted")]
     scripted = scripted_all if confirmatory_runs is None else scripted_all[scripted_all["run"].isin(confirmatory_runs) & (scripted_all["report_variant"] == "open")]
     interventions = scripted_all if confirmatory_runs is None else scripted_all[scripted_all["run"].str.split("--").str[0].isin(confirmatory_runs)]
+    # The ablations vary briefing phrasing, salience and the report prompt, which the confirmatory grid holds
+    # constant. Select the runs that actually vary them rather than naming a run, so an added ablation arm is
+    # picked up automatically instead of silently reporting nothing.
+    varies = [r for r, g in scripted_all.groupby("run")
+              if max(g["phrasing"].nunique(), g["briefing_variant"].nunique(), g["report_variant"].nunique()) > 1]
+    ablations = scripted_all[scripted_all["run"].isin(varies)] if varies else scripted
     return {
         "E7_interventions": e7_interventions(interventions, B),
         "E12_mechanical_vs_judge": e12_mechanical_vs_judge(scripted, B),
@@ -278,7 +284,7 @@ def run_exploratory(df: pd.DataFrame, B: int = 1000, breadth_runs: list[str] | N
         "E1_leak_vs_floor": e1_leak_vs_floor(scripted, B),
         "E2_issue_kind": e2_issue_kind(scripted, B),
         "E3_no_deal_vs_bad": e3_no_deal_vs_bad(scripted, B),
-        "E4_ablations": e4_ablations(scripted, B),
+        "E4_ablations": e4_ablations(ablations, B),
         "E5_llm_counterparty": e5_llm_counterparty(df, B),
         "E6_active_params": e6_capability_by_active_params(scripted, B),
     }

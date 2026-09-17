@@ -1,6 +1,6 @@
 # Results: main-v2
 
-Generated 2026-09-16T23:33:16+00:00 from runs main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm by `proxy analyze all`. Do not edit by hand.
+Generated 2026-09-17T16:27:20+00:00 from runs main-v2, main-v2-qwen, main-v2-fable, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm, ablations-v1, llm-counterparty-v1 by `proxy analyze all`. Do not edit by hand.
 
 Episodes: 2880 · excluded (errors): 0 (0.0%)
 
@@ -55,7 +55,7 @@ D2 is conditional on the report stating a total, which is itself an outcome of m
 - EXPLORATORY E1 leak non-disclosure: 0.0% [0.0%, 0.0%] (n=5, scenarios=5); floor: 2.7% [0.0%, 9.5%] (n=37, scenarios=13)
 - EXPLORATORY E2 categorical minus ordinal issue: +0.06 [+0.00, +0.30] (n=37, scenarios=13)
 - EXPLORATORY E3 characterization no_deal minus bad: n/a
-- EXPLORATORY E5 LLM-counterparty arm: 0 episodes, D1 lower bound n/a
+- EXPLORATORY E5 LLM-counterparty arm: 78 episodes, D1 lower bound 0.0% [0.0%, 0.0%] (n=9, scenarios=6)
 
 ## Figures
 
