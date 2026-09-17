@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT))
 
 from proxy.analysis.data import load_frame  # noqa: E402
 from proxy.analysis.paper_figures import paper_figures  # noqa: E402
-from proxy.analysis.paper_numbers import per_model_table, write_numbers  # noqa: E402
+from proxy.analysis.paper_numbers import _macro_name, per_model_table, write_numbers  # noqa: E402
 from proxy.analysis.report import AnalysisConfig  # noqa: E402
 from proxy.config import load_models  # noqa: E402
 from proxy.store import EpisodeStore  # noqa: E402
@@ -123,6 +123,95 @@ def versions_table(runs: list[str]) -> str:
     return f"{head}\n{body}\n\\bottomrule\n\\end{{tabular}}"
 
 
+def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
+    """Every remaining prose figure, read from the analysis outputs rather than typed into the text.
+
+    A number typed into a .tex file silently goes stale the moment an arm is added. These come from the same
+    JSON the results table is built from, so the paper cannot disagree with its own analysis.
+    """
+    import json
+
+    def pct(x, d=0):
+        return "n/a" if x is None else f"{100 * x:.{d}f}\\%"
+
+    def pts(x, d=1):
+        return "n/a" if x is None else f"{abs(x) * 100:.{d}f}"
+
+    conf_path, expl_path = results_dir / "confirmatory.json", results_dir / "exploratory.json"
+    if not conf_path.exists() or not expl_path.exists():
+        return {}
+    c, e = json.loads(conf_path.read_text()), json.loads(expl_path.read_text())
+    m: dict[str, str] = {}
+
+    v = e["E0_violations_and_leaks"]["violation_rate"]
+    m["violationRate"] = pct(v["estimate"], 1)
+    m["violationCI"] = f"{100 * v['ci95'][0]:.1f}--{100 * v['ci95'][1]:.1f}"
+    m["leakRate"] = pct(e["E0_violations_and_leaks"]["leak_rate"]["estimate"], 1)
+
+    m["hTwoaPoints"] = pts(c["H2"]["H2a_blocked_alternative"]["lower_bound_bad_minus_good"]["estimate"])
+    m["hTwoaP"] = f"{c['H2']['p_H2a']:.2f}"
+    m["hThreePoints"] = pts(c["H3"]["blocked_alternative_lower_bound_audit_minus_none"]["estimate"])
+    m["hThreeP"] = f"{c['H3']['p'] * 3:.3f}".lstrip("0")
+    m["hFiveGap"] = f"{c['H5']['rating_gap_report_minus_truth']['estimate']:.2f}"
+    m["hFiveMissed"] = pct(c["H5"]["missed_intervention_rate"]["estimate"], 1)
+    m["hFiveP"] = f"{c['H5']['p']:.2f}"
+    rank = (c["H4"]["pooled_slope"].get("terms") or {}).get("capability_rank") or {}
+    if rank.get("odds_ratio"):
+        m["hFourOR"] = f"{rank['odds_ratio']:.2f}"
+        if rank.get("or_ci95"):
+            m["hFourORCI"] = f"{rank['or_ci95'][0]:.2f}--{rank['or_ci95'][1]:.2f}"
+
+    # Report interventions, on the paired negotiations only.
+    a = full_frame[(full_frame["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed"])
+    for variant, key in (("open", "Open"), ("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
+        g = a[a["report_variant"] == variant]
+        m[f"int{key}Judged"] = pct(g["a_nondisclosed"].mean()) if len(g) else "n/a"
+    for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
+        ch = e["E7_interventions"][variant]["judged_change"]
+        m[f"int{key}Delta"] = f"{ch['estimate']:.2f}"
+        m[f"int{key}DeltaCI"] = f"{ch['ci95'][0]:.2f} to {ch['ci95'][1]:.2f}"
+        for row in e["E7_interventions"][variant].get("by_model", []):
+            m[f"int{key}{_macro_name(row['model'])}"] = pct(row["v_judged"])
+
+    for model, row in (e.get("E10_breadth", {}).get("by_model") or {}).items():
+        judged = (row or {}).get("judged") or {}
+        if judged.get("estimate") is not None:
+            m[f"breadth{_macro_name(model)}"] = pct(judged["estimate"])
+    # Stakes: disclosure among episodes where the requirement cost a lot versus a little.
+    sp = a[(a["report_variant"] == "open")].dropna(subset=["points_forgone"])
+    if len(sp):
+        high, low = sp[sp["points_forgone"] > 10], sp[sp["points_forgone"] <= 10]
+        m["stakesHighDisclosed"] = pct(1 - high["a_nondisclosed"].mean(), 1) if len(high) else "n/a"
+        m["stakesLowDisclosed"] = pct(1 - low["a_nondisclosed"].mean(), 1) if len(low) else "n/a"
+        from proxy.analysis.stats import cluster_bootstrap, diff_of
+
+        d = cluster_bootstrap(sp.assign(stakes=(sp["points_forgone"] > 10).map({True: "high", False: "low"}),
+                                        disclosed=1 - sp["a_nondisclosed"]),
+                              diff_of("disclosed", "stakes", "low", "high"), B=2000)
+        m["stakesDiff"] = f"{100 * d['estimate']:.1f}"
+        m["stakesDiffCI"] = f"{100 * d['ci95'][0]:.1f}--{100 * d['ci95'][1]:.1f}"
+    # The mechanical floor implied by how few reports name the blocked offer at all.
+    named = a[(a["report_variant"] == "open")].dropna(subset=["a_not_named"])
+    if len(named):
+        m["doneNotNamed"] = pct(named["a_not_named"].mean(), 1)
+    # Per-model ranges quoted as "0--4%" style spans.
+    tr = [r["v_judged"] for r in e["E7_interventions"]["tradeoffs"].get("by_model", [])
+          if r["model"] in ("gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6")]
+    if tr:
+        m["intTradeoffsBestRange"] = f"{100 * min(tr):.0f}--{100 * max(tr):.0f}\\%"
+    # D2 error range among the frontier models, so the "concentrated in weaker models" claim is checkable.
+    frontier = ["claude-opus-5", "claude-sonnet-5", "gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6"]
+    fr = full_frame[(full_frame["report_variant"] == "open") & full_frame["model"].isin(frontier)]
+    fr = fr.dropna(subset=["total_misstated"])
+    if len(fr):
+        by = fr.groupby("model")["total_misstated"].mean()
+        m["dtwoFrontierRange"] = f"{100 * by.min():.0f}--{100 * by.max():.0f}\\%"
+    opus = (e.get("E11_stakes", {}).get("by_model") or {}).get("claude-opus-5") or {}
+    if opus.get("p") is not None:
+        m["stakesOpusP"] = f"{opus['p']:.2f}".lstrip("0")
+    return m
+
+
 def main(config: str = "configs/analysis.yaml") -> None:
     cfg = AnalysisConfig.load(ROOT / config)
     df = load_frame(EpisodeStore(), load_models(), runs=cfg.runs, primary_judge=cfg.primary_judge, principal_model=cfg.principal_model)
@@ -131,7 +220,9 @@ def main(config: str = "configs/analysis.yaml") -> None:
     variants = df[(~df["error"]) & (df["report_variant"] != "open") & (df["blocked_alt"] == 1.0)]
     pairs = int(variants[variants["report_variant"] == "tradeoffs"]["base_episode"].nunique())
     write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration={"good": 0.44, "mediocre": 0.24, "bad": 0.09},
-                  extra={"nInterventionPairs": str(pairs), **compute_macros(), **debias_macros(confirmatory, cfg)})
+                  extra={"nInterventionPairs": str(pairs), **compute_macros(),
+                         **stats_macros(df[~df["error"]], ROOT / "results" / "main-v2"),
+                         **debias_macros(confirmatory, cfg)})
     # Figures get the full frame: paper_figures keeps report variants out of the headline figures itself and
     # needs them for the intervention comparison.
     scored = df[(~df["error"]) & (df["run"].isin((cfg.confirmatory_runs or []) + [f"{r}--{v}" for r in (cfg.confirmatory_runs or []) for v in ("tradeoffs", "norm")]))]
