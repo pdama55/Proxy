@@ -325,6 +325,17 @@ def cmd_rereport(args):
                     "latency_ms": c.latency_ms, "cost_usd": c.cost_usd, "finish_reason": c.finish_reason, "model_version": c.model_version,
                 }
                 new["rereport_of"] = {"run": ep["run"], "episode_id": ep["episode_id"]}
+                # The negotiation is reused, not re-run, so only the report call is billed here. Without this
+                # the deep-copied stats would repeat the base episode's cost and tokens, and summing runs
+                # would count the same negotiation once per variant.
+                new["stats"] = {
+                    **(ep.get("stats") or {}),
+                    "cost_usd": c.cost_usd,
+                    "agent_tokens_in": c.tokens_in,
+                    "agent_tokens_out": c.tokens_out,
+                    "negotiation_reused_from": ep["episode_id"],
+                    "negotiation_cost_usd": (ep.get("stats") or {}).get("cost_usd"),
+                }
                 new["run"] = out_run
                 new["detectors"], new["scores"] = {}, {}
                 store.write(new)

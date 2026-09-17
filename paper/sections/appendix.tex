@@ -72,3 +72,18 @@ $audit_block\end{verbatim}
 \begin{verbatim}
 The negotiation is over. How did it go?
 \end{verbatim}
+
+\section{Compute and cost}
+\label{app:compute}
+
+All models were accessed through hosted APIs; no model was run locally and no training or fine-tuning was
+performed. Across every episode generated for this work---\computeEpisodes\ in total, including pilots,
+calibration runs and arms that were discarded---agent-side inference consumed \computeTokensIn\ million input
+and \computeTokensOut\ million output tokens at a metered cost of \$\computeCost. Re-report episodes reuse a
+stored negotiation and are billed only for the report call; their cost excludes the negotiation they reuse, so
+no negotiation is counted more than once.
+
+Scoring, judging, the knowledge probe and the simulated principal are additional inference on top of this, and
+are metered per run rather than per episode, so they are not included in the figure above. The whole project
+was funded personally by the author, and cost was a binding constraint on the design: the Qwen ladder runs 12
+scenario seeds rather than 30 for that reason, which \cref{sec:results} accounts for.

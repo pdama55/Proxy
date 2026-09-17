@@ -35,6 +35,16 @@ def debias_macros(confirmatory, cfg) -> dict[str, str]:
     a = confirmatory[confirmatory["blocked_alt"] == 1.0].dropna(subset=["a_nondisclosed", "a_unmentioned"])
     if a.empty:
         return {}
+    # The grid mixes arms with 30 scenario seeds and arms with 12, so an episode-weighted pooled rate is a
+    # statement about an episode mix. Report the model-averaged rate and the full-seed subset beside it.
+    by_model = a.groupby("model")["a_nondisclosed"].mean()
+    seeds = a.groupby("model")["scenario_seed"].nunique() if "scenario_seed" in a else a.groupby("model")["seed"].nunique()
+    full = a[a["model"].isin(seeds[seeds == seeds.max()].index)]
+    bounds.update({
+        "doneModelAveraged": f"{100 * by_model.mean():.1f}\\%",
+        "doneFullSeedOnly": f"{100 * full['a_nondisclosed'].mean():.1f}\\%",
+        "nFullSeedModels": str(full["model"].nunique()),
+    })
     a = a.assign(stratum=a["a_unmentioned"].map({1.0: "unmentioned", 0.0: "mentioned"}))
     share = a["stratum"].value_counts(normalize=True).to_dict()
     observed = a.groupby("stratum")["a_nondisclosed"].mean().to_dict()
@@ -60,6 +70,29 @@ def debias_macros(confirmatory, cfg) -> dict[str, str]:
     }
 
 
+def compute_macros() -> dict[str, str]:
+    """Agent-side compute over every episode on disk, pilots and discarded arms included."""
+    import json
+
+    cost = tokens_in = tokens_out = 0.0
+    episodes = 0
+    for p in (ROOT / "data" / "runs").rglob("episodes/*.json"):
+        try:
+            st = (json.loads(p.read_text()).get("stats") or {})
+        except (OSError, ValueError):
+            continue
+        episodes += 1
+        cost += float(st.get("cost_usd") or 0)
+        tokens_in += st.get("agent_tokens_in") or 0
+        tokens_out += st.get("agent_tokens_out") or 0
+    return {
+        "computeEpisodes": f"{episodes:,}",
+        "computeCost": f"{cost:,.0f}",
+        "computeTokensIn": f"{tokens_in / 1e6:.0f}",
+        "computeTokensOut": f"{tokens_out / 1e6:.0f}",
+    }
+
+
 def main(config: str = "configs/analysis.yaml") -> None:
     cfg = AnalysisConfig.load(ROOT / config)
     df = load_frame(EpisodeStore(), load_models(), runs=cfg.runs, primary_judge=cfg.primary_judge, principal_model=cfg.principal_model)
@@ -68,7 +101,7 @@ def main(config: str = "configs/analysis.yaml") -> None:
     variants = df[(~df["error"]) & (df["report_variant"] != "open") & (df["blocked_alt"] == 1.0)]
     pairs = int(variants[variants["report_variant"] == "tradeoffs"]["base_episode"].nunique())
     write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration={"good": 0.44, "mediocre": 0.24, "bad": 0.09},
-                  extra={"nInterventionPairs": str(pairs), **debias_macros(confirmatory, cfg)})
+                  extra={"nInterventionPairs": str(pairs), **compute_macros(), **debias_macros(confirmatory, cfg)})
     # Figures get the full frame: paper_figures keeps report variants out of the headline figures itself and
     # needs them for the intervention comparison.
     scored = df[(~df["error"]) & (df["run"].isin((cfg.confirmatory_runs or []) + [f"{r}--{v}" for r in (cfg.confirmatory_runs or []) for v in ("tradeoffs", "norm")]))]
