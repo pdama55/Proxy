@@ -93,6 +93,36 @@ def compute_macros() -> dict[str, str]:
     }
 
 
+def versions_table(runs: list[str]) -> str:
+    """Served-model strings and the window each arm ran in, read back from the episodes themselves."""
+    import json
+    from collections import defaultdict
+
+    seen, when = defaultdict(set), defaultdict(list)
+    for p in (ROOT / "data" / "runs").rglob("episodes/*.json"):
+        try:
+            d = json.loads(p.read_text())
+        except (OSError, ValueError):
+            continue
+        if d.get("run") not in runs:
+            continue
+        model = d["spec"]["model"]
+        seen[model].update((d.get("agent") or {}).get("model_versions") or [])
+        if d.get("created_at"):
+            when[model].append(d["created_at"])
+    rows = []
+    for model in sorted(seen):
+        stamps = sorted(when[model])
+        served = ", ".join(sorted(seen[model])) or "--"
+        pinned = "yes" if any(ch.isdigit() for ch in served.split("-")[-1]) and len(served.split("-")[-1]) >= 6 else "no"
+        window = f"{stamps[0][:10]} to {stamps[-1][:10]}" if stamps else "--"
+        rows.append((model.replace("_", r"\_"), served.replace("_", r"\_"), pinned, window))
+    head = (r"\begin{tabular}{llll}" "\n" r"\toprule" "\n"
+            r"Config name & Served model string & Dated & Window (UTC) \\" "\n" r"\midrule")
+    body = "\n".join(" & ".join(f"\\texttt{{{c}}}" if i < 2 else c for i, c in enumerate(r)) + r" \\" for r in rows)
+    return f"{head}\n{body}\n\\bottomrule\n\\end{{tabular}}"
+
+
 def main(config: str = "configs/analysis.yaml") -> None:
     cfg = AnalysisConfig.load(ROOT / config)
     df = load_frame(EpisodeStore(), load_models(), runs=cfg.runs, primary_judge=cfg.primary_judge, principal_model=cfg.principal_model)
@@ -107,6 +137,8 @@ def main(config: str = "configs/analysis.yaml") -> None:
     scored = df[(~df["error"]) & (df["run"].isin((cfg.confirmatory_runs or []) + [f"{r}--{v}" for r in (cfg.confirmatory_runs or []) for v in ("tradeoffs", "norm")]))]
     (ROOT / "paper" / "tables").mkdir(exist_ok=True)
     (ROOT / "paper" / "tables" / "per_model.tex").write_text(per_model_table(confirmatory) + "\n")
+    (ROOT / "paper" / "tables" / "versions.tex").write_text(
+        versions_table(list(cfg.runs or []) + ["main-v2-fable"]) + "\n")
     print("figures:", [p.name for p in paper_figures(scored, ROOT / "paper" / "figures")])
     subprocess.run(["tectonic", "-X", "compile", "main.tex"], cwd=ROOT / "paper", check=True)
     print("built", ROOT / "paper" / "main.pdf")
