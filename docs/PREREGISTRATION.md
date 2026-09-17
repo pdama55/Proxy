@@ -110,19 +110,26 @@ These live in `proxy/analysis/exploratory.py`:
 - E8: evaluation awareness, the share of reports or reasoning that mention being tested or evaluated.
 - E9: implicit leakage, whether the confidential figure is recoverable from the agent's concession path.
 
-## 9. Frozen artifacts (fill in at posting)
+## 9. Frozen artifacts
 
-| Artifact | Hash / version |
-| --- | --- |
-| `configs/main.yaml` config hash | `711b6d6e75225ff26203c51830183d622d46befcf1b52e69e7e5a111aa63f3ce` |
-| `configs/main_qwen.yaml` config hash | `b4f72079a9529f7b62599c3848d3243d1eb2b5b54b4040c2427726a15d4dd779` |
-| Agent prompt template hash (`proxy.prompts.prompt_template_hash()`) | `58261b64f08713d7355d40b7b6736b7f3b5de3736a54826405112d57b975ee4e` |
-| Judge prompt hash (`proxy.scoring.judge.judge_prompt_hash()`) | `a65125b329c280db429a88ffe4221829357afe1f956a038b1b3a6d830225babf` |
-| Principal prompt hash | `de70dc771f472b554c9b45830600e233209cefae168fa517bfef6d9b58403a38` |
-| Knowledge-probe prompt hash | `d36d381d5b1a14fa5e291dcb0f6a88ae278c4f7efa56414fea1dd99549fdb4fc` |
-| Detector aliases, stated-total extractor, `detectors-v2`, `runner-v4` | git tag `prereg-v1` |
-| Annotation guidelines SHA-256 | `73b151645d6d16aa1bdaf02ba2c169104577b4c5457426cecf699c7c3fa23c6f` |
-| Harness git commit | `a17941df8daa4f8fff4baeafd257ece0eae64540` (tagged `prereg-v1`) |
+- `configs/main.yaml` config hash:  
+  `711b6d6e75225ff26203c51830183d622d46befcf1b52e69e7e5a111aa63f3ce`
+- `configs/main_qwen.yaml` config hash:  
+  `b4f72079a9529f7b62599c3848d3243d1eb2b5b54b4040c2427726a15d4dd779`
+- Agent prompt template hash (`proxy.prompts.prompt_template_hash()`):  
+  `58261b64f08713d7355d40b7b6736b7f3b5de3736a54826405112d57b975ee4e`
+- Judge prompt hash (`proxy.scoring.judge.judge_prompt_hash()`):  
+  `a65125b329c280db429a88ffe4221829357afe1f956a038b1b3a6d830225babf`
+- Principal prompt hash:  
+  `de70dc771f472b554c9b45830600e233209cefae168fa517bfef6d9b58403a38`
+- Knowledge-probe prompt hash:  
+  `d36d381d5b1a14fa5e291dcb0f6a88ae278c4f7efa56414fea1dd99549fdb4fc`
+- Detector aliases, stated-total extractor, `detectors-v2`, `runner-v4`:  
+  git tag `prereg-v1`
+- Annotation guidelines SHA-256:  
+  `73b151645d6d16aa1bdaf02ba2c169104577b4c5457426cecf699c7c3fa23c6f`
+- Harness git commit:  
+  `a17941df8daa4f8fff4baeafd257ece0eae64540` (tagged `prereg-v1`)
 
 ## 10. Interpretation commitments
 
