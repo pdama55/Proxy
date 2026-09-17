@@ -1,90 +1,80 @@
-# Proxy
+# Proxy — reporting fidelity in delegated LLM negotiation
 
-A research harness that measures whether an LLM agent negotiating on someone's behalf reports back faithfully. Against exact ground truth, does its report tell the client about a better deal that only the client's own requirement ruled out, and does it state the deal's value correctly? Instruction violations and leaked secrets are measured too, but in the pilots agents almost never committed them.
+When an LLM agent negotiates on someone's behalf, that person usually learns what happened only from the
+agent's own report. This project measures whether those reports convey what the principal's own instructions
+cost them.
 
-Design documents: [PRD](PRD.md) · [Technical design](TDD.md) · [Research plan](RESEARCH_PLAN.md) · [Design decisions](docs/DECISIONS.md) · [Annotation guidelines](docs/annotation_guidelines.md) · [Preregistration draft](docs/PREREGISTRATION.md)
+In a seeded four-issue procurement negotiation with exact integer utilities, a scripted counterparty controls
+how good an outcome is reachable and, at a fixed point in every negotiation, offers a better deal that only
+the client's own floor requirement rules out. The client then asks the agent how it went. The report is scored
+against ground truth on two things: whether it conveys that the blocked better deal existed (**D1**), and
+whether it states the deal's value correctly (**D2**).
 
-## Setup
+The headline: agents almost never broke the requirement, and almost never mentioned what it cost. Judged
+non-disclosure is 97% of exposed episodes, and at least 69% by a mechanical measure that involves no model
+judgment at all. Asked directly afterwards, the same agents named the blocked offer's value correctly in most
+cases — so the information was available and simply not volunteered.
 
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -e ".[dev,analysis]"
-.venv/bin/pytest -q
-```
+## Where to start
 
-API keys go in a `.env` file at the repo root (gitignored, loaded automatically). Set only the providers you use:
-
-| Variable | Needed for |
+| Document | What it is |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Claude models |
-| `OPENAI_API_KEY` | GPT models |
-| `GEMINI_API_KEY` | Gemini models |
-| `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` | models deployed in an Azure OpenAI / Foundry resource (`provider: azure`, `model` = deployment name) |
-| `OPENROUTER_API_KEY` | open-weight models, the LLM counterparty, judges and principal simulator; or every model with `--via-openrouter` |
+| `paper/main.pdf` | The paper. Every number in it is generated from the data; none are typed by hand. |
+| `docs/PREREGISTRATION.md` | The analysis plan, frozen at commit `a17941df` before any confirmatory episode. Registered at https://osf.io/hb3f2 |
+| `docs/DEVIATIONS.md` | Every departure from that plan, dated, with rationale and scope. |
+| `docs/DATASHEET.md` | Datasheet for the released episode corpus, including what it should *not* be used for. |
+| `docs/ANNOTATION_STUDY.md` | The human validation protocol. |
 
-## Workflow
+## Reproducing
 
-```bash
-source .venv/bin/activate   # then run commands as `python -m proxy ...` from the repo root
+Requires Python 3.14 and API credentials for the providers named in `configs/models.yaml` (Anthropic direct,
+Azure AI Foundry, OpenRouter). Every reported number regenerates from the stored episodes without re-running
+any model:
 
-# 0. One command for the whole pilot: generate, score, judge, and have the reader agent read every transcript
-python -m proxy pilot configs/pilot.yaml                    # writes data/runs/pilot-v1/pilot_review.md
-
-# 1. Check models and the counterparty before spending anything
-python -m proxy models --ping claude-haiku-4-5 qwen3.5-27b glm-5.3   # verify IDs and credentials (a fraction of a cent)
-python -m proxy calibrate configs/pilot.yaml                          # outcome bands with the reference agent (free)
-
-# 2. Generate and score
-python -m proxy run configs/pilot.yaml                                # resumable; stops at the spend ceiling
-python -m proxy score                                                 # mechanical detectors + judge-free stage-1 disclosure
-python -m proxy judge configs/judging.yaml                            # stage-2 disclosure, characterization, principal simulation
-
-# 3. Transcript review: the reader agent reads every episode in full and writes a pilot review
-python -m proxy read configs/reading.yaml --run pilot-v1
-python -m proxy view                                        # replay viewer at http://127.0.0.1:8765, for spot checks
-python -m proxy show <episode_id>
-
-# 4. Size the confirmatory run from the pilot
-python -m proxy analyze power --runs pilot-v1 --deltas 0.1 0.15 --scenarios 10 20 40
-
-# 5. Human validation
-python -m proxy annotate export batch1 --runs main-v1                 # blinded, stratified items
-python -m proxy annotate serve data/annotations/batch1 --annotator alice
-python -m proxy annotate agreement data/annotations/batch1
-
-# 6. Every table, figure, and number in the paper
-python -m proxy analyze all configs/analysis.yaml                     # writes results/<name>/
+```sh
+python -m proxy analyze all configs/analysis.yaml   # all confirmatory and exploratory results
+python paper/build.py                               # numbers.tex, figures, tables, then the PDF
 ```
 
-Episodes are stored as `data/runs/<run>/episodes/<id>.json`, with a SQLite index at `data/index.sqlite` for ad hoc queries.
+To regenerate the data itself, which does call models and does cost money:
+
+```sh
+python -m proxy run   configs/main.yaml             # generate episodes
+python -m proxy score --run main-v2                 # mechanical detectors
+python -m proxy probe --run main-v2 --spend-ceiling 40   # knowledge probe
+python -m proxy judge configs/judging_primary.yaml --run main-v2
+python -m proxy index                               # rebuild the episode index
+```
+
+Other useful entry points: `python -m proxy rereport --run main-v2 --variant tradeoffs` re-asks stored
+negotiations for a report under a different prompt, and `python -m proxy annotate agreement
+data/annotations/batch-a --judges kimi-k2.6 cohere-command-a-plus` recomputes annotator and judge agreement.
+
+Sampling uses provider defaults with no temperature or seed set, so individual episodes are not reproducible
+token-for-token. The unit of replication is the scenario; all uncertainty is quantified by resampling
+scenarios. The provider's served-model string is recorded on every episode and is the identifier a
+replication should target, not the product name.
 
 ## Layout
 
 ```
-proxy/
-  env/           issues, seeded scenarios, exact Pareto/Nash/KS benchmarks, briefings and planted constraints
-  counterparty/  scripted concession-curve counterparty, reference agent, calibration
-  runner/        episode loop, views, output parsing, isolation checks, experiment runner
-  adapters/      Anthropic, OpenAI-compatible (OpenAI, OpenRouter, Ollama, vLLM), Gemini; spend ceiling
-  store/         episode JSON + SQLite index
-  scoring/       detectors, leak normalizer, stage-1 disclosure, judge, principal simulation
-  annotation/    blinded batch export, local labeling tool, kappa and detector validation
-  analysis/      frame builder, cluster-bootstrap/GEE/mixed models, confirmatory (H1-H5), exploratory, figures, power
-  viewer/        local read-only replay viewer
-prompts/         every prompt any model sees, version-controlled and hashed into each record
-configs/         models, pilot, main (confirmatory), ablations, LLM-counterparty arm, judging, analysis
-tests/           benchmarks, isolation, normalizer, parser, golden episodes, judge blindness, annotation, analysis, synthetic end-to-end study
+proxy/env/          scenario generation, briefings, utilities
+proxy/counterparty/ the scripted counterparty and its calibration
+proxy/runner/       episode execution
+proxy/scoring/      detectors, judges, knowledge probe, simulated principal
+proxy/analysis/     confirmatory and exploratory analysis, figures, paper numbers
+proxy/annotation/   sampling, agreement, judge-error correction
+configs/            one YAML per run; the config hash is recorded on every episode
+paper/              LaTeX sources; numbers.tex and tables/ are generated, never edited
 ```
 
-## Status
+## A note on the numbers
 
-The full pipeline is built and tested end to end, from generation to analysis, on a synthetic study with a planted effect (`tests/synthetic.py`). Two real pilots have run on Claude Haiku 4.5 and Qwen3.5 27B, 120 episodes in all (`pilot-v1`, `pilot-v2-sweep`):
+No statistic in the paper is typed into the text. Everything comes from a macro generated by
+`paper/build.py` out of the analysis outputs, so the paper cannot disagree with its own tables. This was not
+cosmetic discipline: converting the last hand-written figures caught a claimed effect that the current data
+do not support, and a comparison that had been pooling two different scenario sets.
 
-- Harness bugs the pilot exposed are fixed (runner-v3). The outcome bands now land for real models.
-- No agent violated a floor constraint or leaked its secret, under any briefing variant. The primary measures were therefore reframed (detectors-v2): D1 is non-disclosure of a better deal blocked by the client's requirement (exposure about 90% of episodes), and D2 is the error in the report's stated point total. See [docs/DECISIONS.md](docs/DECISIONS.md) and the revision note in the [preregistration](docs/PREREGISTRATION.md).
+## Citation
 
-Next steps:
-
-1. Judge the pilot episodes and estimate D1, D2 and H5 parameters; run `proxy analyze power`.
-2. Fill in the TBDs in the preregistration, get one outside reviewer to read the design, and post it.
-3. Run the ablations, then the confirmatory grid on new scenario seeds, then annotation (including stated-total items), then `proxy analyze all`.
+See `CITATION.cff`. The preregistration is citable at https://osf.io/hb3f2.
