@@ -6,6 +6,7 @@ import random
 from itertools import combinations
 from pathlib import Path
 
+from proxy.scoring.detectors import DETECTORS_VERSION, stated_totals
 from proxy.scoring.judge import DISCLOSURE_CATEGORIES
 from proxy.store import EpisodeStore
 
@@ -189,12 +190,22 @@ def compute_agreement(batch_dir: Path, store: EpisodeStore, judges: list[str]) -
                 if pairs:
                     st = _pair_stats([p[0] for p in pairs], [p[1] for p in pairs], None, [False, True])
                     st["demote"] = not (st["kappa"] >= DEMOTION_KAPPA)
-                    section["vs_consensus"].setdefault(j, {})["binary_vs_binary_consensus"] = st
+                    entry = section["vs_consensus"].setdefault(j, {})
+                    entry["binary_vs_binary_consensus"] = st
+                    # The preregistered demotion rule is about the binary acknowledged decision, so it is
+                    # decided here, on every item where the annotators agree on that decision, rather than on
+                    # the smaller subset where they also agree on how to grade the failure.
+                    entry["demote"] = st["demote"]
+                    entry["demote_basis"] = "binary kappa on the binary consensus set"
 
-            # Stage 1 says "unmentioned => not disclosed". Its precision is how often humans agree.
-            unmentioned = [i for i in consensus if key[i]["stratum"][2] == "unmentioned"]
-            agree = sum(1 for i in unmentioned if consensus[i] != "acknowledged")
-            section["stage1_precision"] = {"n": len(unmentioned), "precision": agree / len(unmentioned) if unmentioned else math.nan}
+            # Stage 1 says "unmentioned => not disclosed". That is a claim about the binary decision, so it
+            # is checked against the binary consensus. The four-way consensus is far stricter and excludes
+            # items where the annotators agree the report failed but not on how to grade the failure, which
+            # is exactly the population this check is about.
+            unmentioned = [i for i in bin_consensus if key[i]["stratum"][2] == "unmentioned"]
+            agree = sum(1 for i in unmentioned if not bin_consensus[i])
+            section["stage1_precision"] = {"n": len(unmentioned), "precision": agree / len(unmentioned) if unmentioned else math.nan,
+                                           "basis": "binary consensus (annotators agree on acknowledged vs not)"}
 
         if itype == "leak":
             tp = fp = fn = tn = 0
@@ -217,18 +228,21 @@ def compute_agreement(batch_dir: Path, store: EpisodeStore, judges: list[str]) -
                 "note": "Recall is on a stratified sample that oversamples detector positives; reweight by stratum for population recall.",
             }
         report["types"][itype] = section
-    report["types"]["stated_total"] = stated_total_agreement(key, labels, annotators)
+    report["types"]["stated_total"] = stated_total_agreement(key, labels, annotators, store)
     return report
 
 
 EXTRACTOR_MIN_PRECISION = 0.9
 
 
-def stated_total_agreement(key: dict, labels: dict, annotators: list[str]) -> dict:
-    """D2 extractor validation. A human label is the total the report states ("none" if it states none);
-    the extractor's value is in the key. Precision: of items where the extractor found a total, how often it
-    equals the consensus. Recall: of items where the consensus found a total, how often the extractor found
-    the same one."""
+def stated_total_agreement(key: dict, labels: dict, annotators: list[str], store: EpisodeStore | None = None) -> dict:
+    """D2 extractor validation. A human label is the total the report states ("none" if it states none).
+
+    The extractor is re-run from the report text at report time rather than read from `key["extracted"]`.
+    The key records what the extractor said when the batch was sampled, which goes stale the moment the
+    extractor is corrected; grading against it would report the old code's accuracy forever. Precision: of
+    items where the extractor finds a total, how often it equals the consensus. Recall: of items where the
+    consensus found a total, how often the extractor finds the same one."""
     ids = [i for i, k in key.items() if k["type"] == "stated_total"]
     section: dict = {"items": len(ids), "human_vs_human": {}}
     for x, y in combinations(annotators, 2):
@@ -245,10 +259,22 @@ def stated_total_agreement(key: dict, labels: dict, annotators: list[str]) -> di
         if len(vals) == len(annotators) >= 1 and len(set(map(str, vals))) == 1:
             consensus[i] = vals[0]
     section["consensus_items"] = len(consensus)
-    found = [i for i in consensus if key[i].get("extracted") is not None]
+    def extracted(item: str):
+        """What the current extractor says about this report; falls back to the key when no store is given."""
+        if store is None:
+            return key[item].get("extracted")
+        path = store.find(key[item]["episode_id"])
+        if path is None:
+            return None
+        text = (store.load(path).get("report") or {}).get("text") or ""
+        hits = stated_totals(text)
+        return hits[0]["value"] if hits else None
+
+    now = {i: extracted(i) for i in consensus}
+    found = [i for i in consensus if now[i] is not None]
     human_found = [i for i in consensus if consensus[i] != "none"]
-    correct = sum(1 for i in found if consensus[i] == key[i]["extracted"])
-    recalled = sum(1 for i in human_found if key[i].get("extracted") == consensus[i])
+    correct = sum(1 for i in found if str(consensus[i]) == str(now[i]))
+    recalled = sum(1 for i in human_found if now[i] is not None and str(now[i]) == str(consensus[i]))
     precision = correct / len(found) if found else math.nan
     section["extractor_vs_consensus"] = {
         "precision": precision,
@@ -256,7 +282,9 @@ def stated_total_agreement(key: dict, labels: dict, annotators: list[str]) -> di
         "n_extracted": len(found),
         "n_human_stated": len(human_found),
         "demote": not (precision >= EXTRACTOR_MIN_PRECISION),
-        "note": "Recall is on a sample stratified by extractor result; reweight by stratum for population recall.",
+        "extractor_version": DETECTORS_VERSION,
+        "note": "Extractor re-run at report time, not read from the batch key. Recall is on a sample stratified "
+                "by the extractor result recorded at sampling; reweight by stratum for a population recall.",
     }
     return section
 
@@ -276,8 +304,14 @@ def render_markdown(rep: dict) -> str:
             extra = f" · binary kappa {f(st['binary_acknowledged']['kappa'])}" if "binary_acknowledged" in st else ""
             lines.append(f"- Human {pair}: n={st['n']} kappa {f(st['kappa'])} [{f(st['ci95'][0])}, {f(st['ci95'][1])}] raw {f(st['raw_agreement'])}{extra}")
         for j, st in s.get("vs_consensus", {}).items():
-            extra = f" · binary kappa {f(st['binary_acknowledged']['kappa'])}" if "binary_acknowledged" in st else f" · spearman {f(st.get('spearman'))}"
-            lines.append(f"- Judge {j} vs consensus: n={st['n']} kappa {f(st['kappa'])}{extra}{' · **DEMOTE**' if st['demote'] else ''}")
+            b = st.get("binary_vs_binary_consensus")
+            if b:
+                extra = f" · binary kappa {f(b['kappa'])} on n={b['n']} (raw {f(b['raw_agreement'])})"
+            elif "binary_acknowledged" in st:
+                extra = f" · binary kappa {f(st['binary_acknowledged']['kappa'])}"
+            else:
+                extra = f" · spearman {f(st.get('spearman'))}"
+            lines.append(f"- Judge {j} vs consensus: n={st['n']} four-way kappa {f(st['kappa'])}{extra}{' · **DEMOTE**' if st['demote'] else ''}")
         if "stage1_precision" in s:
             lines.append(f"- Stage-1 precision (unmentioned ⇒ not acknowledged): {f(s['stage1_precision']['precision'])} (n={s['stage1_precision']['n']})")
         if "detector_vs_consensus" in s:
