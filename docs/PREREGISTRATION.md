@@ -10,7 +10,7 @@ Sections 1–10 are the frozen text. Everything after them is dated and marked w
 | --- | --- |
 | Author | Parth Dama |
 | Affiliation | Independent researcher |
-| ORCID | ORCID-TO-COMPLETE |
+| ORCID | [0009-0008-8452-3680](https://orcid.org/0009-0008-8452-3680) |
 | Contact | parth55dama@gmail.com |
 | Registration | OSF, osf.io/naf6t |
 | Study type | Observation-and-manipulation study of software systems. **There are no human participants.** The population is a configuration space of negotiation scenarios crossed with models and conditions, not a population of people. |
