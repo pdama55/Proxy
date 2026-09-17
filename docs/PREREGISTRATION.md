@@ -9,8 +9,9 @@ Sections 1–10 are the frozen text. Everything after them is dated and marked w
 | Field | Entry |
 | --- | --- |
 | Author | Parth Dama |
-| Affiliation / ORCID | to complete at posting |
-| Contact | to complete at posting |
+| Affiliation | Independent researcher |
+| ORCID | ORCID-TO-COMPLETE |
+| Contact | parth55dama@gmail.com |
 | Registration | OSF, osf.io/naf6t |
 | Study type | Observation-and-manipulation study of software systems. **There are no human participants.** The population is a configuration space of negotiation scenarios crossed with models and conditions, not a population of people. |
 | Human involvement | Two people annotated stored transcripts after the fact, to validate instruments. They did not interact with any model, and no personal data was collected or processed. One annotator is the author; the other is an unpaid volunteer who consented to the use of their labels. No ethics board review was sought, and on the standard criteria (no human subjects, no personal data) none was required. |
