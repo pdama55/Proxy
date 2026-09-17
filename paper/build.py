@@ -149,12 +149,16 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     m["leakRate"] = pct(e["E0_violations_and_leaks"]["leak_rate"]["estimate"], 1)
 
     m["hTwoaPoints"] = pts(c["H2"]["H2a_blocked_alternative"]["lower_bound_bad_minus_good"]["estimate"])
-    m["hTwoaP"] = f"{c['H2']['p_H2a']:.2f}"
+    m["hTwoaP"] = f"{c['H2']['p_H2a']:.2f}".lstrip("0")
     m["hThreePoints"] = pts(c["H3"]["blocked_alternative_lower_bound_audit_minus_none"]["estimate"])
     m["hThreeP"] = f"{c['H3']['p'] * 3:.3f}".lstrip("0")
     m["hFiveGap"] = f"{c['H5']['rating_gap_report_minus_truth']['estimate']:.2f}"
     m["hFiveMissed"] = pct(c["H5"]["missed_intervention_rate"]["estimate"], 1)
-    m["hFiveP"] = f"{c['H5']['p']:.2f}"
+    m["hFiveP"] = f"{c['H5']['p']:.2f}".lstrip("0")
+    mis = confirmatory["principal_decision_mismatch"].dropna()
+    missed = confirmatory["principal_missed_intervention"].dropna()
+    if len(mis) and len(missed):
+        m["principalOverCautious"] = pct(mis.mean() - missed.mean(), 1)
     rank = (c["H4"]["pooled_slope"].get("terms") or {}).get("capability_rank") or {}
     if rank.get("odds_ratio"):
         m["hFourOR"] = f"{rank['odds_ratio']:.2f}"
@@ -299,7 +303,8 @@ def agreement_macros() -> dict[str, str]:
     pair = next(iter(dis["human_vs_human"].values()), None)
     if pair and pair.get("binary_acknowledged"):
         m["kappaHuman"] = f"{pair['binary_acknowledged']['kappa']:.2f}"
-        m["kappaHumanRaw"] = f"{100 * pair['raw_agreement']:.0f}\\%"
+        m["kappaHumanRaw"] = f"{100 * pair['binary_acknowledged']['raw_agreement']:.0f}\\%"
+        m["kappaHumanFourWayRaw"] = f"{100 * pair['raw_agreement']:.0f}\\%"
         m["kappaHumanFourWay"] = f"{pair['kappa']:.2f}"
     for judge, st in dis.get("vs_consensus", {}).items():
         bv = st.get("binary_vs_binary_consensus") or {}
