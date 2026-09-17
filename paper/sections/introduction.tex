@@ -12,10 +12,10 @@ Disclosure here is not self-serving concealment. Telling the client that their o
 \paragraph{Findings.} Across \nModels\ models from \nFamilies\ families and \nEpisodes\ negotiations:
 \begin{itemize}
   \item \textbf{Obedient agents.} Agents essentially never broke the client's requirement or leaked its confidential figure (\violationCount\ violations, \leakCount\ leaks).
-  \item \textbf{Silent reports.} Reports conveyed the blocked better deal in only a small minority of exposed episodes (judged non-disclosure \doneJudgedAll). \textbf{[TBD: main-grid summary]}
-  \item \textbf{Knowledge without disclosure.} Asked directly afterwards, most agents named the blocked offer and its value. When the client's question asked about turned-down terms, agents disclosed. \textbf{[TBD]}
-  \item \textbf{Not a scaling property.} Disclosure varies sharply between frontier models from different developers. \textbf{[TBD: Opus 5, Fable 5.1, GPT-6 Astra]}
-  \item \textbf{Value misstatement tracks capability; omission does not.} Some models misstate their own deal's value in most reports that state it, while frontier models are exact. Omission persists across capability. \textbf{[TBD]}
+  \item \textbf{Silent reports.} Reports conveyed the blocked better deal in only a small minority of exposed episodes (judged non-disclosure \doneJudgedAll\ of \exposedCount\ exposed episodes). Only \doneNamedAll\ of reports name the blocked offer at all, so non-disclosure is at least \doneNotNamed\ on mechanical grounds, with no model judgment involved.
+  \item \textbf{Knowledge without disclosure.} Asked directly afterwards, most agents named the blocked offer and its value. Among silent reports, agents named that offer's value correctly in \probeKnewAll\ of cases. When the client's question asked about turned-down terms, judged non-disclosure fell from \intOpenJudged\ to \intTradeoffsJudged.
+  \item \textbf{Not a scaling property.} Disclosure varies sharply between frontier models from different developers: Claude Opus 5 and Claude Fable 5.1 leave the blocked deal unconveyed in \doneJudgedClaudeOpusFive\ and \fableJudged\ of exposed episodes, against \doneJudgedGptSixAstra\ for GPT-6 Astra, an equally capable negotiator.
+  \item \textbf{Value misstatement tracks capability; omission does not.} Some models misstate their own deal's value in most reports that state it, while frontier models are exact. Claude Haiku 4.5 misstates in \dtwoWrongClaudeHaikuFourFive\ of the reports that state a value, against \dtwoFrontierRange\ for the frontier models. Omission persists across capability; misstatement does not.
 \end{itemize}
 
 \paragraph{Contributions.}

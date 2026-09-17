@@ -1,7 +1,7 @@
 \section{Study design}
 \label{sec:design}
 
-\paragraph{Models.} Fifteen models from seven families served as agents (\cref{tab:models}). Anthropic and OpenAI each contribute a three-tier ladder, and five sizes of one open-weight release (Qwen3.5) form a ladder in which size is close to the only difference. Four families contribute one model each. Models ran at provider-default decoding. Refusal fallbacks, which would silently route a turn to a different model, were disabled. \textbf{[TBD: Fable 5.1 arm]}
+\paragraph{Models.} Fifteen models from seven families served as agents (\cref{tab:models}). Anthropic and OpenAI each contribute a three-tier ladder, and five sizes of one open-weight release (Qwen3.5) form a ladder in which size is close to the only difference. Four families contribute one model each. Models ran at provider-default decoding. Refusal fallbacks, which would silently route a turn to a different model, were disabled. Claude Fable 5.1 was added as a sixteenth model after the plan was frozen, once it became Anthropic's current frontier release; it is excluded from every preregistered test and reported separately in \cref{sec:results}.
 
 \begin{table}[t]
 \centering\small
@@ -38,4 +38,4 @@ Mistral & Large 3 & Azure & 30 \\
 \end{itemize}
 All tests are one-sided, with 95\% intervals from resampling whole scenarios and Holm correction across H1a, H1b, H2a, H2b, H3 and H5. H4 predicts a null and uses a non-inferiority rule. The pilot data that informed the measures, including results that run against H2a and H4, are disclosed in the preregistration. The knowledge probe, report interventions, a 100-scenario breadth run and a stakes analysis are exploratory and labelled as such.
 
-\paragraph{Validation.} Two annotators, blind to model, condition and judge output, label stratified samples of disclosure, portrayal, stated totals and leaks. A judge measure with chance-corrected agreement below $\kappa = 0.6$ against their consensus, or a stated-total extractor with precision below 0.9, is demoted from confirmatory use. \textbf{[TBD: agreement results]}
+\paragraph{Validation.} Two annotators, blind to model, condition and judge output, label stratified samples of disclosure, portrayal, stated totals and leaks. A judge measure with chance-corrected agreement below $\kappa = 0.6$ against their consensus, or a stated-total extractor with precision below 0.9, is demoted from confirmatory use. Neither demotion was triggered: the annotators agree at $\kappa = \kappaHuman$ on the binary decision, the primary judge reaches $\kappa = \kappaJudgePrimary$ against their consensus, and the stated-total extractor has precision \extractorPrecision\ (\cref{sec:validation}).

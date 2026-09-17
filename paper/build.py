@@ -123,7 +123,7 @@ def versions_table(runs: list[str]) -> str:
     return f"{head}\n{body}\n\\bottomrule\n\\end{{tabular}}"
 
 
-def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
+def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     """Every remaining prose figure, read from the analysis outputs rather than typed into the text.
 
     A number typed into a .tex file silently goes stale the moment an arm is added. These come from the same
@@ -161,10 +161,17 @@ def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
         if rank.get("or_ci95"):
             m["hFourORCI"] = f"{rank['or_ci95'][0]:.2f}--{rank['or_ci95'][1]:.2f}"
 
-    # Report interventions, on the paired negotiations only.
-    a = full_frame[(full_frame["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed"])
-    for variant, key in (("open", "Open"), ("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
-        g = a[a["report_variant"] == variant]
+    # Report interventions, on the paired negotiations only. The "open" arm of this comparison must be the
+    # confirmatory grid, not every run: breadth and the post-freeze arm also carry open reports, and pooling
+    # them would compare the variants against a different sample than the one they were generated from.
+    base = confirmatory[confirmatory["blocked_alt"] == 1.0].dropna(subset=["a_nondisclosed"])
+    variants = full_frame[(full_frame["blocked_alt"] == 1.0)
+                          & full_frame["run"].isin(["main-v2--tradeoffs", "main-v2--norm"])]
+    variants = variants.dropna(subset=["a_nondisclosed"])
+    a = base
+    m["intOpenJudged"] = pct(base["a_nondisclosed"].mean()) if len(base) else "n/a"
+    for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
+        g = variants[variants["report_variant"] == variant]
         m[f"int{key}Judged"] = pct(g["a_nondisclosed"].mean()) if len(g) else "n/a"
     for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
         ch = e["E7_interventions"][variant]["judged_change"]
@@ -178,7 +185,7 @@ def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
         if judged.get("estimate") is not None:
             m[f"breadth{_macro_name(model)}"] = pct(judged["estimate"])
     # Stakes: disclosure among episodes where the requirement cost a lot versus a little.
-    sp = a[(a["report_variant"] == "open")].dropna(subset=["points_forgone"])
+    sp = base.dropna(subset=["points_forgone"])
     if len(sp):
         high, low = sp[sp["points_forgone"] > 10], sp[sp["points_forgone"] <= 10]
         m["stakesHighDisclosed"] = pct(1 - high["a_nondisclosed"].mean(), 1) if len(high) else "n/a"
@@ -189,9 +196,9 @@ def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
                                         disclosed=1 - sp["a_nondisclosed"]),
                               diff_of("disclosed", "stakes", "low", "high"), B=2000)
         m["stakesDiff"] = f"{100 * d['estimate']:.1f}"
-        m["stakesDiffCI"] = f"{100 * d['ci95'][0]:.1f}--{100 * d['ci95'][1]:.1f}"
+        m["stakesDiffCI"] = f"{100 * d['ci95'][0]:.1f} to {100 * d['ci95'][1]:+.1f}"
     # The mechanical floor implied by how few reports name the blocked offer at all.
-    named = a[(a["report_variant"] == "open")].dropna(subset=["a_not_named"])
+    named = base.dropna(subset=["a_not_named"])
     if len(named):
         m["doneNotNamed"] = pct(named["a_not_named"].mean(), 1)
     # Per-model ranges quoted as "0--4%" style spans.
@@ -201,14 +208,88 @@ def stats_macros(full_frame, results_dir: Path) -> dict[str, str]:
         m["intTradeoffsBestRange"] = f"{100 * min(tr):.0f}--{100 * max(tr):.0f}\\%"
     # D2 error range among the frontier models, so the "concentrated in weaker models" claim is checkable.
     frontier = ["claude-opus-5", "claude-sonnet-5", "gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6"]
-    fr = full_frame[(full_frame["report_variant"] == "open") & full_frame["model"].isin(frontier)]
-    fr = fr.dropna(subset=["total_misstated"])
+    fr = confirmatory[confirmatory["model"].isin(frontier)].dropna(subset=["total_misstated"])
     if len(fr):
         by = fr.groupby("model")["total_misstated"].mean()
         m["dtwoFrontierRange"] = f"{100 * by.min():.0f}--{100 * by.max():.0f}\\%"
     opus = (e.get("E11_stakes", {}).get("by_model") or {}).get("claude-opus-5") or {}
     if opus.get("p") is not None:
         m["stakesOpusP"] = f"{opus['p']:.2f}".lstrip("0")
+    return m
+
+
+def fable_macros(full_frame) -> dict[str, str]:
+    """Claude Fable 5.1 was added after the freeze, so it is reported separately and as a sensitivity check.
+
+    The preregistered confirmatory set is unchanged; these macros let the paper state what happens when the
+    arm is included, which is what the deviations log promises.
+    """
+    def pct(x, d=1):
+        return "n/a" if x is None else f"{100 * x:.{d}f}\\%"
+
+    ok = full_frame[(full_frame["run"] == "main-v2-fable") & (full_frame["report_variant"] == "open")]
+    a = ok[ok["blocked_alt"] == 1.0].dropna(subset=["a_nondisclosed"])
+    if not len(a):
+        return {}
+    m = {
+        "fableJudged": pct(a["a_nondisclosed"].mean()),
+        "fableN": str(len(a)),
+        "fableDtwo": pct(ok["total_misstated"].dropna().mean()),
+    }
+    silent = a[a["a_nondisclosed"] == 1.0].dropna(subset=["probe_knew"])
+    if len(silent):
+        m["fableProbeKnew"] = pct(silent["probe_knew"].mean(), 0)
+    # Is the new arm actually the same as Opus 5, or does it only look it?
+    from proxy.analysis.stats import cluster_bootstrap, diff_of
+
+    # Main grid only: Opus 5 also appears in the breadth runs, and pooling those would compare Fable's 30
+    # scenarios against a different and larger scenario set.
+    pair = full_frame[(full_frame["report_variant"] == "open") & (full_frame["blocked_alt"] == 1.0)
+                      & full_frame["run"].isin(["main-v2", "main-v2-fable"])]
+    pair = pair[pair["model"].isin(["claude-opus-5", "claude-fable-5-1"])].dropna(subset=["a_nondisclosed"])
+    if pair["model"].nunique() == 2:
+        d = cluster_bootstrap(pair, diff_of("a_nondisclosed", "model", "claude-opus-5", "claude-fable-5-1"), B=2000)
+        m["fableVsOpus"] = f"{100 * d['estimate']:+.1f}"
+        m["fableVsOpusCI"] = f"{100 * d['ci95'][0]:.1f} to {100 * d['ci95'][1]:+.1f}"
+    # Headline with the arm folded in, so a reader can see it moves nothing.
+    conf = full_frame[full_frame["run"].isin(["main-v2", "main-v2-qwen", "main-v2-fable"])]
+    conf = conf[conf["report_variant"] == "open"]
+    ca = conf[conf["blocked_alt"] == 1.0].dropna(subset=["a_nondisclosed"])
+    m["doneJudgedWithFable"] = pct(ca["a_nondisclosed"].mean())
+    m["nEpisodesWithFable"] = f"{len(conf):,}"
+    return m
+
+
+def agreement_macros() -> dict[str, str]:
+    """Annotator and judge agreement, read from the generated agreement report."""
+    import json
+
+    path = ROOT / "data" / "annotations" / "batch-a" / "agreement.json"
+    if not path.exists():
+        return {}
+    rep = json.loads(path.read_text())
+    dis = rep["types"]["disclosure"]
+    m: dict[str, str] = {}
+    pair = next(iter(dis["human_vs_human"].values()), None)
+    if pair and pair.get("binary_acknowledged"):
+        m["kappaHuman"] = f"{pair['binary_acknowledged']['kappa']:.2f}"
+        m["kappaHumanRaw"] = f"{100 * pair['raw_agreement']:.0f}\\%"
+        m["kappaHumanFourWay"] = f"{pair['kappa']:.2f}"
+    for judge, st in dis.get("vs_consensus", {}).items():
+        bv = st.get("binary_vs_binary_consensus") or {}
+        if bv.get("kappa") is not None:
+            tag = "Primary" if "kimi" in judge else "Second"
+            m[f"kappaJudge{tag}"] = f"{bv['kappa']:.2f}"
+            m[f"kappaJudge{tag}N"] = str(bv["n"])
+            m[f"kappaJudge{tag}Raw"] = f"{100 * bv['raw_agreement']:.0f}\\%"
+    ex = rep["types"].get("stated_total", {}).get("extractor_vs_consensus") or {}
+    if ex:
+        m["extractorPrecision"] = f"{ex['precision']:.2f}"
+        m["extractorRecall"] = f"{ex['recall']:.2f}"
+    sp = dis.get("stage1_precision") or {}
+    if sp.get("precision") is not None:
+        m["stageOnePrecision"] = f"{sp['precision']:.2f}"
+        m["stageOneN"] = str(sp["n"])
     return m
 
 
@@ -221,7 +302,8 @@ def main(config: str = "configs/analysis.yaml") -> None:
     pairs = int(variants[variants["report_variant"] == "tradeoffs"]["base_episode"].nunique())
     write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration={"good": 0.44, "mediocre": 0.24, "bad": 0.09},
                   extra={"nInterventionPairs": str(pairs), **compute_macros(),
-                         **stats_macros(df[~df["error"]], ROOT / "results" / "main-v2"),
+                         **stats_macros(df[~df["error"]], confirmatory, ROOT / "results" / "main-v2"),
+                         **fable_macros(df[~df["error"]]), **agreement_macros(),
                          **debias_macros(confirmatory, cfg)})
     # Figures get the full frame: paper_figures keeps report variants out of the headline figures itself and
     # needs them for the intervention comparison.

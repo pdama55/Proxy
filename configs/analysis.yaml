@@ -1,7 +1,7 @@
 name: main-v2
 # Confirmatory tests use only confirmatory_runs with the open report prompt. Breadth, report interventions and
 # the LLM-counterparty arm are listed in runs and analysed only in the exploratory module.
-runs: [main-v2, main-v2-qwen, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm]
+runs: [main-v2, main-v2-qwen, main-v2-fable, breadth-a, breadth-b, main-v2--tradeoffs, main-v2--norm]
 confirmatory_runs: [main-v2, main-v2-qwen]
 breadth_runs: [breadth-a, breadth-b]
 primary_judge: kimi-k2.6
