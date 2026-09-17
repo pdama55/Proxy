@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+title: "Proxy: reporting fidelity in delegated LLM negotiation"
+message: "If you use this software or dataset, please cite it as below."
+type: software
+authors:
+  - given-names: Parth
+    family-names: Dama
+    email: parth55dama@gmail.com
+    orcid: "https://orcid.org/0009-0008-8452-3680"
+repository-code: "https://github.com/pdama55/Proxy"
+abstract: >-
+  A harness and episode corpus for measuring whether LLM agents negotiating on a
+  principal's behalf report back faithfully. In a seeded four-issue procurement
+  negotiation with exact utilities, a scripted counterparty offers a better deal
+  that only the principal's own floor requirement rules out; the agent's report
+  is then scored against ground truth for whether it conveys that the blocked
+  deal existed and whether it states the deal's value correctly.
+keywords:
+  - LLM agents
+  - AI safety
+  - principal-agent
+  - delegation
+  - negotiation
+  - reporting fidelity
+  - LLM-as-judge
+license: MIT
+license-url: "https://github.com/pdama55/Proxy/blob/main/LICENSE"
+identifiers:
+  - type: url
+    value: "https://osf.io/hb3f2"
+    description: Preregistration (OSF Open-Ended Registration)
+references:
+  - type: data
+    title: "Preregistration: Reporting Fidelity in Delegated LLM Negotiation"
+    authors:
+      - given-names: Parth
+        family-names: Dama
+        orcid: "https://orcid.org/0009-0008-8452-3680"
+    url: "https://osf.io/hb3f2"
+    year: 2026
