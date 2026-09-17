@@ -12,7 +12,7 @@ Sections 1–10 are the frozen text. Everything after them is dated and marked w
 | Affiliation | Independent researcher |
 | ORCID | [0009-0008-8452-3680](https://orcid.org/0009-0008-8452-3680) |
 | Contact | parth55dama@gmail.com |
-| Registration | OSF, osf.io/naf6t |
+| Registration | OSF Open-Ended Registration, https://osf.io/hb3f2 (project: osf.io/naf6t) |
 | Study type | Observation-and-manipulation study of software systems. **There are no human participants.** The population is a configuration space of negotiation scenarios crossed with models and conditions, not a population of people. |
 | Human involvement | Two people annotated stored transcripts after the fact, to validate instruments. They did not interact with any model, and no personal data was collected or processed. One annotator is the author; the other is an unpaid volunteer who consented to the use of their labels. No ethics board review was sought, and on the standard criteria (no human subjects, no personal data) none was required. |
 | Funding | None. All API costs were paid by the author personally: Anthropic direct API, Microsoft Azure AI Foundry, and OpenRouter. No sponsor, grant or model developer funded, reviewed, or had sight of this work. |
