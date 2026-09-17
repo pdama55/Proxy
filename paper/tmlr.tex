@@ -1,8 +1,13 @@
-\documentclass[11pt]{article}
+% TMLR submission build. Anonymous by default: the tmlr package prints "Anonymous authors / Paper under
+% double-blind review" unless the [accepted] or [preprint] option is given. For the camera-ready, change the
+% package option to [accepted] and swap \preregpointer back to the real links (see paper/main.tex).
+%
+%   tectonic -X compile tmlr.tex
+%
+\documentclass{article}
+\usepackage{tmlr}
 
 \usepackage{amsmath}
-\usepackage{libertinus}
-\usepackage[margin=1.05in]{geometry}
 \usepackage{microtype}
 \usepackage{booktabs,tabularx,multirow}
 \usepackage{graphicx}
@@ -12,7 +17,6 @@
 \usepackage{subcaption}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,calc}
-\usepackage[numbers,sort&compress]{natbib}
 \usepackage[colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent]{hyperref}
 \usepackage{cleveref}
 
@@ -25,18 +29,17 @@
 
 \captionsetup{font=small,labelfont=bf,labelsep=period,justification=raggedright,singlelinecheck=false}
 \setlist{itemsep=2pt,topsep=4pt}
-\setlength{\parskip}{0pt}
 
 \newcommand{\Done}{\textsc{d1}}
 \newcommand{\Dtwo}{\textsc{d2}}
 \newcommand{\report}[1]{\begin{center}\colorbox{quote}{\parbox{0.9\linewidth}{\small\itshape #1}}\end{center}}
 
-\newcommand{\preregpointer}{commit \texttt{a17941df}, \url{https://osf.io/hb3f2}}
+% Anonymized for double-blind review. The real pointers are in main.tex.
+\newcommand{\preregpointer}{anonymized registration; link supplied to reviewers on request}
+
 \input{numbers}
 
-\title{\textbf{What the Agent Tells You:}\\[2pt]\Large Reporting Fidelity in Delegated LLM Negotiation}
-\author{Parth Dama\\\small Independent researcher\\\small \texttt{parth55dama@gmail.com} \quad ORCID \texttt{0009-0008-8452-3680}}
-\date{Draft --- \today}
+\title{What the Agent Tells You:\\ Reporting Fidelity in Delegated LLM Negotiation}
 
 \begin{document}
 \maketitle
@@ -53,7 +56,7 @@
 \input{sections/limitations}
 \input{sections/ethics}
 
-\bibliographystyle{plainnat}
+\bibliographystyle{tmlr}
 \bibliography{references}
 
 \appendix
