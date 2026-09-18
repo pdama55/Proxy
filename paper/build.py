@@ -174,6 +174,7 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     variants = variants.dropna(subset=["a_nondisclosed"])
     a = base
     m["intOpenJudged"] = pct(base["a_nondisclosed"].mean()) if len(base) else "n/a"
+    m["doneJudgedN"] = f"{len(base):,}"
     for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
         g = variants[variants["report_variant"] == variant]
         m[f"int{key}Judged"] = pct(g["a_nondisclosed"].mean()) if len(g) else "n/a"
@@ -205,6 +206,14 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     named = base.dropna(subset=["a_not_named"])
     if len(named):
         m["doneNotNamed"] = pct(named["a_not_named"].mean(), 1)
+        # Naming is not logically necessary for conveying the deal, so "not named" is not a lower bound on
+        # non-disclosure. Report how close it comes instead of asserting the implication.
+        nn = named[named["a_not_named"] == 1.0]
+        m["doneNotNamedN"] = f"{len(nn):,}"
+        conveyed = nn[nn["a_nondisclosed"] == 0.0]
+        m["doneNotNamedButConveyed"] = str(len(conveyed))
+        if len(nn):
+            m["doneNotNamedAndSilent"] = pct(1 - len(conveyed) / len(nn), 1)
     # Per-model ranges quoted as "0--4%" style spans.
     tr = [r["v_judged"] for r in e["E7_interventions"]["tradeoffs"].get("by_model", [])
           if r["model"] in ("gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6")]

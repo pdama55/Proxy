@@ -1,6 +1,6 @@
 # Preregistration: Reporting Fidelity in Delegated LLM Negotiation
 
-**Status: FROZEN at git tag `prereg-v1`, before any confirmatory episode was generated.** The registration record is commit `a17941df8daa4f8fff4baeafd257ece0eae64540` (a tag can be moved; the commit hash cannot), and the OSF registration carries the authoritative timestamp. Any later change is reported as a deviation in `docs/DEVIATIONS.md` and in the addenda at the end of this document.
+**Status: FROZEN at git tag `prereg-v1`, before any confirmatory episode was generated.** The plan was committed as `a17941df8daa4f8fff4baeafd257ece0eae64540` (tagged `prereg-v1`) twelve minutes before the first confirmatory episode was generated. That commit timestamp is self-reported and the commit is unsigned, so it is not an independent third-party timestamp; the OSF registration is independent but postdates collection. Both facts are stated here rather than left for a reader to discover. Any later change is reported as a deviation in `docs/DEVIATIONS.md` and in the addenda at the end of this document.
 
 Sections 1–10 are the frozen text. Everything after them is dated and marked with whether it was written before or after the confirmatory data existed.
 
