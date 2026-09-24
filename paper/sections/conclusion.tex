@@ -1,0 +1,26 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+An agent can follow every instruction it was given and still leave its principal worse informed than the
+principal assumes. Across \nEpisodes\ negotiations and \nModels\ models, agents respected the client's hard
+requirement almost without exception, protected the confidential figure, and reached deals above the client's
+fallback---and in \doneJudgedAll\ of the episodes where the requirement had blocked a better deal, said nothing
+that would let the client learn it. The omission is not strategic: disclosure would have excused a weaker
+outcome, and nothing in the setting rewards silence. Asked directly afterwards, the same agents named the
+blocked offer and its value in \probeKnewAll\ of the silent cases, so the information was present and simply
+not volunteered.
+
+What moves the behaviour is the question, not the instruction. Telling the agent its transcript would be read
+changed almost nothing; a deployer-side instruction to surface trade-offs helped unevenly; rewording how the
+client's constraint was described did not matter. Asking the agent what it turned down cut non-disclosure from
+\intOpenJudged\ to \intTradeoffsJudged, and the ablation arm reproduced that on different scenarios with a
+judge-free measure. The practical implication is that oversight of a delegated agent cannot rely on the agent
+volunteering what its principal needs; the interface has to know which questions to ask, because the principal
+often cannot know what was withheld.
+
+Two limits bound all of this. The environment manufactures the trade-off in order to measure reporting on it,
+so these rates say how often the cost of an instruction is conveyed when one exists, not how often such
+situations arise unaided; the live-counterparty arm suggests the latter is much rarer. And the principal here
+is a language model, so the downstream cost is measured on a simulated reader rather than a person. Whether
+human principals would act differently on these reports is the obvious next study, and the environment,
+transcripts and measures are released so that it can be run against exactly these episodes.

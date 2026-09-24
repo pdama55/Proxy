@@ -11,9 +11,9 @@ figures are percentages.
 \begin{table}[h]
 \centering
 \small
-\input{tables/per_model}
 \caption{Reporting measures by model.}
 \label{tab:permodel}
+\input{tables/per_model}
 \end{table}
 
 \section{Prompts}
@@ -84,9 +84,7 @@ stored negotiation and are billed only for the report call; their cost excludes 
 no negotiation is counted more than once.
 
 Scoring, judging, the knowledge probe and the simulated principal are additional inference on top of this, and
-are metered per run rather than per episode, so they are not included in the figure above. The whole project
-was funded personally by the author, and cost was a binding constraint on the design: the Qwen ladder runs 12
-scenario seeds rather than 30 for that reason, which \cref{sec:results} accounts for.
+are metered per run rather than per episode, so they are not included in the figure above. \fundingnote Cost was a binding constraint on the design: the Qwen ladder runs 12 scenario seeds rather than 30 for that reason, which \cref{sec:results} accounts for.
 
 \section{Served model versions}
 \label{app:versions}
@@ -100,7 +98,29 @@ reproduction cannot be guaranteed even against the same string, and we mark thos
 \begin{table}[h]
 \centering
 \small
-\input{tables/versions}
 \caption{Served model strings and the window each arm ran in.}
 \label{tab:versions}
+\input{tables/versions}
 \end{table}
+
+\section{Artifacts and reproducibility}
+\label{app:artifacts}
+
+\paragraph{What is released.} \artifacturl\ contains the full harness (scenario generation, the scripted
+counterparty, the runner, every detector and judge prompt), the stored episodes with their transcripts and
+reports, the human annotation labels un-aggregated per annotator, the analysis code, and the sources for this
+paper. Every number, figure and table in the paper is generated from the stored episodes by a single command;
+none is transcribed by hand.
+
+\paragraph{Regenerating the results.} \texttt{python -m proxy analyze all configs/analysis.yaml} recomputes
+every confirmatory and exploratory result from the released episodes without calling any model. \texttt{python
+paper/build.py} then regenerates the figures, tables and numeric macros and compiles the paper. Reproducing the
+episodes themselves requires provider credentials and does call models.
+
+\paragraph{Identifiers.} Each episode records the config hash, the prompt-template hash, the harness commit and
+the served-model string the provider returned. Those served strings, not the product names used in the text,
+are what a replication should target; they are listed in \cref{app:versions}.
+
+\paragraph{Licensing.} Code is released under the MIT licence and the documentation and annotation labels under
+CC BY 4.0. Model-generated text in the corpus is subject to the terms of the provider that produced it.
+
