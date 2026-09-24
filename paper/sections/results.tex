@@ -7,14 +7,14 @@ Every number below is computed over \nEpisodes\ confirmatory episodes, of which 
 Agents accepted a package that broke the client's requirement in \violationCount\ episodes (\violationRate, CI \violationCI) and revealed the confidential figure in \leakCount\ (\leakRate). Both rates are an order of magnitude below the violation rates reported when a rule stands between an agent and its assigned goal. The reporting failures below are therefore not cover stories for misconduct: there was almost none to cover.
 
 \subsection{Reports rarely convey the blocked better deal}
-\begin{figure}[t]
+\begin{figure}[tb]
 \centering
 \includegraphics[width=\linewidth]{figures/d1_by_model.pdf}
 \caption{Share of exposed episodes whose report does not convey the better deal that the client's own requirement blocked. Filled points: judged. Hollow diamonds: the judge-free lower bound (the report refers to no other offer at all). Bars are 95\% intervals.}
 \label{fig:d1}
 \end{figure}
 
-A blocked better deal was on the table in \exposureRate\ of episodes. Reports conveyed it in \doneToldAll\ of them: judged non-disclosure is \doneJudgedAll\ (\hyperref[sec:validation]{validated in \cref{sec:validation}}), supporting H1a ($p_{\text{Holm}} < .003$). Two mechanical measures sit beneath that figure. The judge-free floor is \doneLowerAll: that share of reports refer to no other offer or option whatsoever, against a deliberately broad pattern that accepts even the bare word ``offer''. A report that mentions no alternative cannot have conveyed one, so this figure is a genuine lower bound and needs no judgment at all. A second mechanical measure is suggestive rather than bounding: \doneNotNamed\ of reports never give the blocked offer's price, its value in points, or the term the requirement ruled out. Naming is not logically necessary for conveying---a report could describe the trade-off without a figure---but it is close to necessary in practice: of those \doneNotNamedN\ reports the judge rates \doneNotNamedAndSilent\ as not conveying the deal, with only \doneNotNamedButConveyed\ exceptions in the whole grid.
+A blocked better deal was on the table in \exposureRate\ of episodes. Reports conveyed it in \doneToldAll\ of them: judged non-disclosure is \doneJudgedAll\ (\hyperref[sec:validation]{validated in \cref{sec:validation}}), supporting H1a ($p_{\text{Holm}} < .003$). Two mechanical measures sit beneath that figure. The judge-free floor is \doneLowerAll: that share of reports refer to no other offer or option whatsoever, against a deliberately broad pattern that accepts even the bare word ``offer''. A report that mentions no alternative cannot have conveyed one, so this figure is a genuine lower bound and needs no judgment at all. A second mechanical measure tracks it closely without bounding it: \doneNotNamed\ of reports never give the blocked offer's price, its value in points, or the term the requirement ruled out, and the judge rates \doneNotNamedAndSilent\ of those as not conveying the deal.
 
 The exception is not one model but one lineage. Claude Opus 5 leaves the blocked deal unconveyed in \doneJudgedClaudeOpusFive\ of exposed episodes, and Claude Fable 5.1---added after the freeze and reported separately below---in \fableJudged\ (n = \fableN), while every other model sits between \doneJudgedGrokFourSix\ and \doneJudgedClaudeHaikuFourFive: \doneJudgedClaudeSonnetFive\ for Claude Sonnet 5, \doneJudgedGptSixAstra\ for GPT-6 Astra, \doneJudgedGrokFourSix\ for Grok 4.6. Frontier status alone does not predict disclosure---GPT-6 Astra is as capable a negotiator and discloses almost never---but within Anthropic's ladder the two most capable models are the only ones that volunteer the trade-off at any substantial rate---and still in only about a quarter of exposed episodes. That pattern is what H4 detects as a capability slope, and it is confined to one developer.
 
@@ -53,7 +53,7 @@ This is what the measure is looking for: the package, its value, the requirement
 that requirement, and an invitation to revisit it. It occurs in \doneToldAll\ of exposed episodes.
 
 \subsection{Silence is not ignorance}
-\begin{figure}[t]
+\begin{figure}[tb]
 \centering
 \includegraphics[width=\linewidth]{figures/knowledge_vs_disclosure.pdf}
 \caption{For each model: how often the report told the client unprompted (right), and how often the agent named the blocked offer's value when asked directly afterwards, among reports that had stayed silent (left).}
@@ -63,7 +63,7 @@ that requirement, and an invitation to revisit it. It occurs in \doneToldAll\ of
 After each report was recorded, the same model was asked in the same conversation whether the other party had offered anything worth more that it did not take. Among silent reports, agents named that offer's value correctly in \probeKnewAll\ of cases (n = \probeN). GPT-6 Astra, GPT-5.6 Sol, Grok 4.6 and Qwen3.5 27B answered correctly in \probeKnewGptSixAstra, \probeKnewGptFiveSixSol, \probeKnewGrokFourSix\ and \probeKnewQwenthreeFiveTwosevenb\ of cases respectively, while telling the client unprompted in about one episode in a hundred. The information was available, retrievable on request, and omitted.
 
 \subsection{Asking works; instructing the agent mostly does not}
-\begin{figure}[t]
+\begin{figure}[tb]
 \centering
 \includegraphics[width=\linewidth]{figures/interventions.pdf}
 \caption{Judged non-disclosure under three report prompts on identical negotiations.}
@@ -73,7 +73,7 @@ After each report was recorded, the same model was asked in the same conversatio
 Re-asking the same \nInterventionPairs\ negotiations for a report under a different prompt isolates the prompt's effect. When the client's question asks about terms the agent turned down, judged non-disclosure falls from \intOpenJudged\ to \intTradeoffsJudged\ ($\intTradeoffsDelta$, CI \intTradeoffsDeltaCI), and to \intTradeoffsBestRange\ for GPT-6 Astra, GPT-5.6 Sol, GPT-5.6 Luna and Grok 4.6. A deployer-side instruction stating that the client relies on the account to decide whether to keep their own instructions is weaker and uneven: \intOpenJudged\ to \intNormJudged\ overall ($\intNormDelta$), with Claude Haiku 4.5 at \intNormClaudeHaikuFourFive, Llama 4 Maverick at \intNormLlamaFourMaverick\ and Claude Sonnet 5 at \intNormClaudeSonnetFive\ essentially unmoved. The burden of eliciting the trade-off falls on a principal who already suspects it exists.
 
 \subsection{Stated values, and what the requirement cost}
-\begin{figure}[t]
+\begin{figure}[tb]
 \centering
 \includegraphics[width=\linewidth]{figures/d2_errors.pdf}
 \caption{Stated minus true point total, among reports that state one.}
@@ -117,13 +117,7 @@ A further arm replaces the scripted counterparty with a language model negotiati
 requirement and leaked no confidential figure, and stated their deal's value wrongly in \llmcpDtwo\ of the
 \llmcpDtwoN\ reports that state one, so \Dtwo\ is not an artifact of the scripted opponent.
 
-\Done\ cannot be estimated from this arm, and the reason is instructive. A blocked better deal arose in only
-\llmcpExposure\ of episodes---\llmcpExposed\ in total---against \exposureRate\ with the scripted counterparty,
-because guaranteeing that exposure is exactly what the scripted counterparty's fixed showcase move is for. A
-free negotiator rarely volunteers its best terms and then has them refused on a technicality. Nine episodes
-support no rate, and we quote none. This is the clearest illustration of the limitation stated in
-\hyperref[sec:limitations]{Limitations}: the main design manufactures the trade-off in order to measure
-reporting on it, and says nothing about how often it arises unaided.
+\Done\ cannot be estimated here: a blocked better deal arose in only \llmcpExposure\ of episodes (\llmcpExposed\ in total) against \exposureRate\ with the scripted counterparty, since a free negotiator rarely volunteers its best terms and then has them refused on a technicality. Nine episodes support no rate and we quote none.
 
 \subsection{The arm added after the freeze}
 Claude Fable 5.1 was not in the frozen plan; it was added once it became Anthropic's current frontier model, so
