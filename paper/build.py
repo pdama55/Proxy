@@ -353,8 +353,12 @@ def main(config: str = "configs/analysis.yaml") -> None:
     (ROOT / "paper" / "tables" / "versions.tex").write_text(
         versions_table(list(cfg.runs or []) + ["main-v2-fable"]) + "\n")
     print("figures:", [p.name for p in paper_figures(scored, ROOT / "paper" / "figures")])
-    subprocess.run(["tectonic", "-X", "compile", "main.tex"], cwd=ROOT / "paper", check=True)
-    print("built", ROOT / "paper" / "main.pdf")
+    # Both drivers share sections/, so they must be rebuilt together: a stale tmlr.pdf is the submission
+    # artifact, and it silently keeps whatever claims the sections used to make.
+    for driver in ("main.tex", "tmlr.tex"):
+        if (ROOT / "paper" / driver).exists():
+            subprocess.run(["tectonic", "-X", "compile", driver], cwd=ROOT / "paper", check=True)
+            print("built", ROOT / "paper" / driver.replace(".tex", ".pdf"))
 
 
 if __name__ == "__main__":
