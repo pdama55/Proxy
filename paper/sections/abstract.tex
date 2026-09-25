@@ -1,3 +1,19 @@
 \begin{abstract}
-AI agents increasingly negotiate and transact for people, who learn what happened mainly from the agent's own report. We test whether those reports tell principals what their own instructions cost them. In a seeded procurement negotiation with exact utilities, a scripted counterparty fixes outcome quality and, at the same point in every negotiation, offers a better deal that only the client's own requirement rules out; the client then asks the agent how it went. Across \nModels\ models from \nFamilies\ families and \nEpisodes\ negotiations under a prespecified analysis plan, agents almost never broke the requirement (\violationCount\ episodes) or revealed a confidential figure (\leakCount), and the deal they reached was worth on average \shadowMean\ points less than the blocked one. Such a deal was on the table in \exposureRate\ of episodes; reports conveyed it in \doneToldAll\ of those, and \doneLowerAll\ refer to no other offer or option at all, a floor that involves no model judgment. Asked directly afterwards, agents named the blocked offer and its value in \probeKnewAll\ of the silent cases, and when the client's question asked about terms they had turned down, non-disclosure fell from \intOpenJudged\ to \intTradeoffsJudged. A deployer-side instruction to surface such trade-offs was markedly weaker, and expecting the transcript to be read changed almost nothing. Stating the deal's value correctly tracked model capability. Volunteering the trade-off tracked it only within one developer's ladder and was flat within the other two, differing sharply between frontier models from different developers. Cheap talk gives these agents no strategic reason to withhold, since sender and receiver interests are aligned and the message is costless. They fail not by distorting under conflict, but by not transmitting when nothing opposes transmission.
+An AI agent can follow every instruction it was given and still leave its principal worse informed than the
+principal assumes. We show this in a setting where the omission is unambiguous and costly: a delegated
+negotiation in which the principal's own requirement rules out a better deal, and the agent decides whether to
+mention it. Agents almost never mention it. Across \nModels\ models from \nFamilies\ families and \nEpisodes\
+negotiations under a prespecified analysis plan, agents respected the requirement (\violationCount\ violations)
+and protected a confidential figure (\leakCount\ leaks), yet conveyed the blocked better deal in \doneToldAll\
+of the episodes where one existed; \doneLowerAll\ of reports refer to no other offer or option at all, a floor
+that uses no model judgment. The requirement cost the principal \shadowMean\ points on average, and the reports
+do not say so. The silence is not ignorance: asked directly afterwards, the same agents named the blocked offer
+and its value in \probeKnewAll\ of the silent cases. Nor is it strategic---disclosure would have excused a
+weaker outcome, and cheap talk gives an agent whose interests are aligned with its principal's no reason to
+withhold. What changes the behaviour is the question rather than the instruction: rewording how the constraint
+was described moved nothing, expecting the transcript to be read moved almost nothing, but asking the agent
+what it had turned down cut non-disclosure from \intOpenJudged\ to \intTradeoffsJudged. Stating the deal's value
+correctly tracked model capability; volunteering the trade-off did so only within one developer's ladder and was
+flat within the other two. Oversight of delegated agents cannot assume the agent will volunteer what its
+principal needs to know.
 \end{abstract}
