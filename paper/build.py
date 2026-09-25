@@ -355,7 +355,7 @@ def main(config: str = "configs/analysis.yaml") -> None:
     print("figures:", [p.name for p in paper_figures(scored, ROOT / "paper" / "figures")])
     # Both drivers share sections/, so they must be rebuilt together: a stale tmlr.pdf is the submission
     # artifact, and it silently keeps whatever claims the sections used to make.
-    for driver in ("main.tex", "tmlr.tex"):
+    for driver in ("main.tex", "tmlr.tex", "arxiv.tex"):
         if (ROOT / "paper" / driver).exists():
             subprocess.run(["tectonic", "-X", "compile", driver], cwd=ROOT / "paper", check=True)
             print("built", ROOT / "paper" / driver.replace(".tex", ".pdf"))

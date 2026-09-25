@@ -1,0 +1,70 @@
+% arXiv preprint build: same content as the TMLR submission, with authorship and the real links restored.
+% The [preprint] option tells the tmlr package to show authors instead of the anonymous banner.
+%
+%   tectonic -X compile tmlr.tex
+%
+\documentclass{article}
+\usepackage[preprint]{tmlr}
+
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{booktabs,tabularx,multirow}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage[colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent]{hyperref}
+\usepackage[section]{placeins}
+\usepackage{cleveref}
+
+\definecolor{accent}{HTML}{1C5CAB}
+\definecolor{ink2}{HTML}{52514E}
+\definecolor{rule}{HTML}{E8E7E3}
+\definecolor{blueS}{HTML}{2A78D6}
+\definecolor{orangeS}{HTML}{EB6834}
+\definecolor{quote}{HTML}{F6F5F2}
+
+\captionsetup{font=small,labelfont=bf,labelsep=period,justification=raggedright,singlelinecheck=false}
+\setlist{itemsep=2pt,topsep=4pt}
+
+\newcommand{\Done}{\textsc{d1}}
+\newcommand{\Dtwo}{\textsc{d2}}
+\newcommand{\report}[1]{\begin{center}\colorbox{quote}{\parbox{0.9\linewidth}{\small\itshape #1}}\end{center}}
+
+% Anonymized for double-blind review. The real pointers are in main.tex.
+\newcommand{\preregpointer}{\url{https://osf.io/hb3f2}}
+
+\newcommand{\fundingnote}{The project was funded personally by the author.}
+\newcommand{\artifacturl}{The project repository, \url{https://github.com/pdama55/Proxy},}
+\input{numbers}
+
+\title{What the Agent Tells You:\\ Reporting Fidelity in Delegated LLM Negotiation}
+\author{Parth Dama\\ Independent researcher\\ \texttt{parth55dama@gmail.com}\\ ORCID \texttt{0009-0008-8452-3680}}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/related}
+\input{sections/environment}
+\input{sections/measures}
+\input{sections/design}
+\input{sections/results}
+\input{sections/validation}
+\input{sections/discussion}
+\input{sections/conclusion}
+\input{sections/limitations}
+\input{sections/ethics}
+
+\bibliographystyle{tmlr}
+\bibliography{references}
+
+\appendix
+\input{sections/deviations}
+\input{sections/appendix}
+
+\end{document}
