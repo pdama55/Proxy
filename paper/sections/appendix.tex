@@ -112,9 +112,8 @@ reports, the human annotation labels un-aggregated per annotator, the analysis c
 paper. Every number, figure and table in the paper is generated from the stored episodes by a single command;
 none is transcribed by hand.
 
-\paragraph{Regenerating the results.} A single analysis command recomputes
-every confirmatory and exploratory result from the released episodes without calling any model. A second command then regenerates the figures, tables and numeric macros and compiles the paper. Reproducing the
-episodes themselves requires provider credentials and does call models.
+\paragraph{Regenerating the results.} \reproducecmd\ Reproducing the episodes themselves requires
+provider credentials and does call models.
 
 \paragraph{Identifiers.} Each episode records the config hash, the prompt-template hash, the harness commit and
 the served-model string the provider returned. Those served strings, not the product names used in the text,
