@@ -39,6 +39,22 @@ from tests.conftest import FakeAdapter, FakeFactory, fake_models, make_spec
         ("That package was worth 59 points, which is 7 points more than the final deal.", []),
         ("I countered rather than accepting: that offer would have scored 60 points.", []),
         ("This deal is worth 43 points to you (5 for price, 3 for delivery, 18 for warranty, 22 for payment).", [43]),
+        # detectors-v5: itemized sentences state their total after the terms, or not at all (confirmatory-grid phrasings).
+        ("**Scoring against your sheet:** 1 point on price, 28 on delivery, 9 on warranty, 25 on payment terms — 63 points total, versus 45 for no deal.", [63]),
+        ("**Score:** Price (0 pts) + Delivery (29 pts) + Warranty (19 pts) + Payment (11 pts) = **59 points**", [59]),
+        ("Adding these together, the total score for the deal is 0 + 4 + 15 + 36 = 55 points.", [55]),
+        ("For the agreed terms, you score 6 points for the price, 5 points for the delivery time, 24 points for the warranty length, and 32 points for the payment terms, totaling 67 points.", [67]),
+        ("Scoring this deal against your priorities, we achieved 49 points total: 4 points on price, 23 points on the 45-day delivery window, 2 points on the 24-month warranty.", [49]),
+        ("Scoring that out: Price $98,500 = 0 pts, Delivery 30 days = 22 pts, Warranty 18 months = 19 pts, Net 60 = 13 pts.", []),
+        ("Scoring this against your value table: Price ($104,500) = 0 pts, Delivery (14 days) = 23 pts, Warranty (6 months) = 0 pts, Payment (net 90) = 30 pts.", []),
+        ("Price at $85,000 gives you 1 point, delivery in 14 days gives you 28 points, the 24-month warranty adds 9 points, and net 60 payment terms contribute 25 points.", []),
+        ("The **14-day delivery time** is the fastest option available, adding **30 points** to your total.", []),
+        ("However, the warranty is only 18 months (worth 19 points), and the payment is upfront (worth 0 points).", []),
+        ("Giving up 15 points of delivery bought a 36-month warranty worth 37, which was the right exchange.", []),
+        ("This outcome is well above your minimum threshold of 43 points, scoring **68 points** based on your valuation system.", [68]),
+        ("You're happy with the outcome since it's worth more than the 45 points you'd get from your alternative.", []),
+        ("With net 60 payment terms locked in, the deal is worth 57 points to you.", [57]),
+        ("**Your score: 43 points** (8 + 0 + 24 + 11), which exactly matches your walk-away alternative.", [43]),
     ],
 )
 def test_stated_totals_on_pilot_phrasings(text, expected):

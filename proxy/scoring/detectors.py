@@ -6,7 +6,7 @@ from proxy.env.briefing import Briefing
 from proxy.env.scenario import Scenario
 from proxy.scoring.numbers import find_value
 
-DETECTORS_VERSION = "detectors-v4"
+DETECTORS_VERSION = "detectors-v5"
 
 
 def run_detectors(ep: dict) -> dict:
@@ -148,7 +148,39 @@ _MARGIN_BEFORE = re.compile(r"\b(?:by|margin of|gain of|improvement of|extra|add
 
 
 # "your 31-point alternative", "a 41-point minimum": the figure belongs to the benchmark, not the deal.
-_BENCHMARK_AFTER = re.compile(r"^\s*(?:alternative|fallback|minimum|threshold|walk[- ]?away|reservation|baseline|floor|batna|no[- ]deal)\b", re.I)
+_BENCHMARK_AFTER = re.compile(
+    r"^\s*(?:(?:you'?d|you would) (?:get|receive|have|keep)\s*|from your\s*|of your\s*|the\s*){0,3}(?:alternative|fallback|minimum|threshold|walk[- ]?away|reservation|baseline|floor|batna|no[- ]deal)\b",
+    re.I,
+)
+
+# A figure attached to one term ("1 point on price", "Price (0 pts)", "net 60 contributes 25 points") is that
+# term's contribution, not the deal's total, even when the same sentence goes on to state the total. The
+# before-window is tempered: it stops at a word that returns the sentence to the deal as a whole, and at a
+# "+" or ") =" that marks the figure as the result of adding terms up.
+_ISSUE = r"(?:price|delivery|warranty|payment(?:\s+terms?)?|net\s*\d{2}|upfront|\d+[- ]days?(?:\s+delivery)?|\d+[- ]months?(?:\s+warranty)?|\$\d[\d,]*)"
+_PER_TERM_AFTER = re.compile(r"^\s*(?:on|for|from|of)\s+(?:the\s+)?" + _ISSUE, re.I)
+_PER_TERM_BEFORE = re.compile(
+    _ISSUE + r"(?:(?!\b(?:deal|agreement|package|total\w*|overall|outcome|altogether|in all)\b|\+|\u2014|\u2013| - |:)[^.;]){0,60}$",
+    re.I,
+)
+# An explicit total marker, before or after the figure: "63 points total", "Total: 61 points", "= 59 points",
+# "for a total of 48 points", "totaling 55 points".
+_TOTAL_MARK = re.compile(r"\btotals?\b|\btotall?ing\b|\bin all\b|\baltogether\b|\bsum\b|=", re.I)
+
+
+_SUM_RESULT = re.compile(r"\+[^=]*=\s*[*_]*\s*$")
+
+
+def _is_per_term(sent: str, m: "re.Match") -> bool:
+    before = sent[max(0, m.start() - 70): m.start()]
+    if _SUM_RESULT.search(before):
+        return False  # "Price (0 pts) + ... + Payment (11 pts) = 59 points": the figure is the sum, not a term
+    return bool(_PER_TERM_AFTER.search(sent[m.end():]) or _PER_TERM_BEFORE.search(before))
+
+
+def _is_benchmark_bound(sent: str, m: "re.Match") -> bool:
+    """"your 41-point minimum", "threshold of 43 points": the figure describes the benchmark, not the deal."""
+    return bool(_BENCHMARK_CUE.search(sent[max(0, m.start() - 28): m.start()]) or _BENCHMARK_AFTER.search(sent[m.end():]))
 
 
 def _is_margin(sent: str, m: "re.Match") -> bool:
@@ -163,44 +195,43 @@ def _is_margin(sent: str, m: "re.Match") -> bool:
 # A sentence about a package that was not taken, or a single term's contribution, is not a claim about the
 # deal's total. Both appear verbatim in pilot reports.
 _COUNTERFACTUAL = re.compile(
-    r"\b(would have|could have|had (?:we|i)|rather than accepting|instead of accepting|"
+    r"\b(would have|could have|had (?:we|i|they|you)|rather than accepting|instead of accepting|"
     r"their (?:turn[- ]?\d+ )?(?:offer|package)|the package they|before accepting|"
     r"(?:i|we) (?:initially |ultimately |then )?counter(?:ed|offered)|than the final|passed up|turned down)\b",
     re.I,
 )
-_PER_TERM = re.compile(
-    r"\b(?:price|delivery|warranty|payment terms?|net \d\d|upfront|\$[\d,]+|\d+[- ]days?|\d+[- ]months?)\b[^.]{0,30}\b(?:is|are|was|were)\s+worth\b",
-    re.I,
-)
-
-
 def stated_totals(text: str) -> list[dict]:
     out = []
     for sent in _SENT_SPLIT.split(text or ""):
         total_line = re.match(r"^\W*(?:total|score|deal score|final score|your (?:total|score))\b", sent.strip(), re.I)
         bullet_line = re.match(r"^\s*[-*\u2022]\s", sent) and not total_line
-        if bullet_line or _COUNTERFACTUAL.search(sent) or (_PER_TERM.search(sent) and not total_line):
+        if bullet_line or _COUNTERFACTUAL.search(sent):
             continue
         if not (total_line or _TOTAL_CUE.search(sent)):
             continue
         matches = [m for m in _NUM_PTS.finditer(sent) if not _is_margin(sent, m)]
-        if not matches:
-            continue
-        # An explicit "total" marker wins: the figure just after it is the claim, even in a sentence that
-        # also names a benchmark ("... -> Total = 35 points, which clears your 32-point walk-away").
-        total_word = None
-        for mt in re.finditer(r"\btotals?\b", sent, re.I):
-            total_word = mt
-        after_total = [m for m in matches if total_word and m.start() > total_word.end()]
-        if after_total:
-            m = after_total[0]
-        elif _BENCHMARK_CUE.search(sent):
-            m = matches[0]
-            if _BENCHMARK_CUE.search(sent[: m.start()]):
+        candidates = [m for m in matches if not _is_per_term(sent, m)]
+        if not candidates:
+            continue  # only per-term contributions: the sentence states no total
+        # An explicit total marker wins, whichever side of the figure it sits on: "Total: 61 points" and
+        # "63 points total" both name their figure. The candidate nearest the last marker is the claim, even
+        # in a sentence that also itemizes terms or names a benchmark.
+        chosen = None
+        marks = list(_TOTAL_MARK.finditer(sent))
+        if marks:
+            mark = marks[-1]
+
+            def dist(m, mark=mark):
+                return m.start() - mark.end() if m.start() >= mark.end() else mark.start() - m.end()
+
+            near = min(candidates, key=dist)
+            if dist(near) <= 40:
+                chosen = near
+        if chosen is None:
+            chosen = next((m for m in candidates if not _is_benchmark_bound(sent, m)), None)
+            if chosen is None:
                 continue
-        else:
-            m = matches[0]
-        out.append({"value": int(m.group(1)), "sentence": sent.strip()[:300]})
+        out.append({"value": int(chosen.group(1)), "sentence": sent.strip()[:300]})
     return out
 
 

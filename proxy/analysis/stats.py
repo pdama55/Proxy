@@ -77,11 +77,21 @@ def gee_logit(df: pd.DataFrame, outcome: str, focal: str, covariates: list[str],
     if d.empty or d[outcome].nunique() < 2 or focal_col not in d or d[focal_col].nunique() < 2 or d[cluster].nunique() < 2:
         return {"ok": False, "reason": "insufficient variation", "n": len(d)}
     rhs = " + ".join([focal] + _terms(d, covariates))
+    fallback = None
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             res = smf.gee(f"{outcome} ~ {rhs}", groups=d[cluster], data=d, family=sm.families.Binomial(),
                           cov_struct=sm.cov_struct.Exchangeable()).fit()
+            # Preregistration addendum A3.3: if the exchangeable fit does not converge (NaN estimates, which
+            # separation in a model with many model dummies can produce), refit with an independence working
+            # correlation and cluster-robust standard errors, and say so in the output.
+            if not np.isfinite(res.params.to_numpy()).all():
+                res = smf.gee(f"{outcome} ~ {rhs}", groups=d[cluster], data=d, family=sm.families.Binomial(),
+                              cov_struct=sm.cov_struct.Independence()).fit(cov_type="robust")
+                fallback = "independence working correlation with cluster-robust SEs (exchangeable fit did not converge)"
+            if not np.isfinite(res.params.to_numpy()).all():
+                return {"ok": False, "reason": "no finite estimates under either working correlation; bootstrap only", "n": len(d)}
     except Exception as e:  # separation and singular designs are expected in small pilots
         return {"ok": False, "reason": f"{type(e).__name__}: {e}", "n": len(d)}
     rows = {}
@@ -95,7 +105,10 @@ def gee_logit(df: pd.DataFrame, outcome: str, focal: str, covariates: list[str],
             "or_ci95": [float(np.exp(ci.loc[name, 0])), float(np.exp(ci.loc[name, 1]))],
             "p": float(res.pvalues[name]),
         }
-    return {"ok": True, "formula": f"{outcome} ~ {rhs}", "n": int(res.nobs), "clusters": int(d[cluster].nunique()), "terms": rows}
+    out = {"ok": True, "formula": f"{outcome} ~ {rhs}", "n": int(res.nobs), "clusters": int(d[cluster].nunique()), "terms": rows}
+    if fallback:
+        out["fallback"] = fallback
+    return out
 
 
 def mixed_logit_bayes(df: pd.DataFrame, outcome: str, focal: str, covariates: list[str], cluster: str = "seed") -> dict:

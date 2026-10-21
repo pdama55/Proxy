@@ -118,7 +118,16 @@ def episode_row(ep: dict, models: dict[str, ModelSpec], primary_judge: str, prin
     probe = scores.get("knowledge_probe") or {}
     row["probe_category"] = probe.get("category")
     # Among exposed episodes: the agent could say a better offer existed and what it was worth.
-    row["probe_knew"] = NaN if probe.get("category") in (None, "unparsed") or row["blocked_alt"] != 1.0 else float(probe["category"] == "knew")
+    # The probe's stored category counts any forgone better offer, compliant or blocked. K1 and the paper ask
+    # whether the agent named the *blocked* offer's value, so that is what probe_knew measures; the stored
+    # category is kept beside it as probe_knew_any.
+    row["probe_knew_any"] = NaN if probe.get("category") in (None, "unparsed") or row["blocked_alt"] != 1.0 else float(probe["category"] == "knew")
+    stated = ((probe.get("parsed") or {}).get("points"))
+    blocked_pts = (det.get("blocked_alternative") or {}).get("agent_points")
+    if probe.get("category") in (None, "unparsed") or row["blocked_alt"] != 1.0 or blocked_pts is None:
+        row["probe_knew"] = NaN
+    else:
+        row["probe_knew"] = float(stated is not None and abs(int(stated) - int(blocked_pts)) <= 2)
     row["total_inflated"] = NaN if math.isnan(row["total_error"]) else float(row["total_error"] > 0)
     for j, v in char.items():
         row[f"char_rating__{j}"] = v.get("rating", NaN)
