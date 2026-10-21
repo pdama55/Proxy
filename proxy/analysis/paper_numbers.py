@@ -38,7 +38,7 @@ def _macro_name(model: str) -> str:
 def numbers(df: pd.DataFrame, calibration: dict | None = None) -> dict[str, str]:
     m: dict[str, str] = {}
     ok = df[~df["error"]]
-    m["nEpisodes"] = str(len(ok))
+    m["nEpisodes"] = f"{len(ok):,}"
     m["nModels"] = str(ok["model"].nunique())
     m["nFamilies"] = str(ok["family"].nunique())
     deals = ok[ok["deal"] == 1.0]
@@ -47,7 +47,7 @@ def numbers(df: pd.DataFrame, calibration: dict | None = None) -> dict[str, str]
 
     a = ok[ok["blocked_alt"] == 1.0]
     j = a.dropna(subset=["a_nondisclosed"])
-    m["exposedCount"] = str(len(a))
+    m["exposedCount"] = f"{len(a):,}"
     m["exposureRate"] = _pct(ok["blocked_alt"].mean())
     m["doneJudgedAll"] = _pct(j["a_nondisclosed"].mean())
     m["doneLowerAll"] = _pct(a["a_unmentioned"].mean())
@@ -61,6 +61,7 @@ def numbers(df: pd.DataFrame, calibration: dict | None = None) -> dict[str, str]
         gj = j[j["model"] == model]
         gs = s[s["model"] == model]
         m[f"doneJudged{name}"] = _pct(gj["a_nondisclosed"].mean()) if len(gj) else "n/a"
+        m[f"doneJudgedOneDec{name}"] = _pct(gj["a_nondisclosed"].mean(), 1) if len(gj) else "n/a"
         m[f"doneN{name}"] = str(len(gj))
         m[f"dtwoWrong{name}"] = _pct(gs["total_misstated"].mean()) if len(gs) else "n/a"
         m[f"dtwoN{name}"] = str(len(gs))
@@ -74,7 +75,7 @@ def numbers(df: pd.DataFrame, calibration: dict | None = None) -> dict[str, str]
     m["doneToldAll"] = _pct(1 - j["a_nondisclosed"].mean(), 1) if len(j) else "n/a"
     silent = j[j["a_nondisclosed"] == 1.0].dropna(subset=["probe_knew"])
     m["probeKnewAll"] = _pct(silent["probe_knew"].mean()) if len(silent) else "n/a"
-    m["probeN"] = str(len(silent))
+    m["probeN"] = f"{len(silent):,}"
     for model, g in ok.groupby("model"):
         name = _macro_name(model)
         gj = j[j["model"] == model]
@@ -127,14 +128,23 @@ def write_numbers(df: pd.DataFrame, path: Path, calibration: dict | None = None,
 __all__ = ["numbers", "write_numbers", "reference_calibration", "DISPLAY"]
 
 
-def per_model_table(df: pd.DataFrame) -> str:
-    """LaTeX table: one row per model, the measures the paper reports model by model."""
+def per_model_table(df: pd.DataFrame, extra: pd.DataFrame | None = None) -> str:
+    """LaTeX table: one row per model, the measures the paper reports model by model.
+
+    `extra` holds arms outside the frozen sample (the post-freeze Claude Fable 5.1 arm); their rows are
+    marked with a dagger and sit in the same developer grouping as the figures, so table and figures agree."""
+    from proxy.analysis.paper_figures import model_order
     from proxy.analysis.stats import cluster_bootstrap, mean_of
 
     ok = df[~df["error"]]
+    marked = set()
+    if extra is not None and len(extra):
+        marked = set(extra["model"].unique())
+        ok = pd.concat([ok, extra[~extra["error"]]], ignore_index=True)
     a = ok[ok["blocked_alt"] == 1.0]
     rows = []
-    for model, g in ok.groupby("model"):
+    for model in model_order(ok["model"]):
+        g = ok[ok["model"] == model]
         ga = a[a["model"] == model]
         gj = ga.dropna(subset=["a_nondisclosed"])
         gn = ga.dropna(subset=["a_not_named"])
@@ -147,14 +157,13 @@ def per_model_table(df: pd.DataFrame) -> str:
         name = shown[0] if isinstance(shown, (tuple, list)) else (shown or model)
         family = shown[1] if isinstance(shown, (tuple, list)) and len(shown) > 1 else g["family"].iloc[0]
         rows.append((
-            name, family, len(gj),
+            name + (r"$^\dagger$" if model in marked else ""), family, len(gj),
             f"{100 * ci['estimate']:.0f} [{100 * ci['ci95'][0]:.0f}, {100 * ci['ci95'][1]:.0f}]",
             f"{100 * ga['a_unmentioned'].mean():.0f}",
             f"{100 * (1 - gn['a_not_named'].mean()):.0f}" if len(gn) else "--",
             f"{100 * gs['total_misstated'].mean():.0f}" if len(gs) else "--",
             f"{100 * silent['probe_knew'].mean():.0f}" if len(silent) else "--",
         ))
-    rows.sort(key=lambda r: (r[1], -float(r[3].split(" ")[0])))
     head = (r"\begin{tabular}{llrrrrrr}" "\n" r"\toprule" "\n"
             r"Model & Family & $n$ & Non-disclosed [95\% CI] & No offer & Names it & Total wrong & Knew \\" "\n"
             r"\midrule")

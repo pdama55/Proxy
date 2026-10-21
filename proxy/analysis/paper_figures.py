@@ -176,6 +176,9 @@ def fig_portrayal(df: pd.DataFrame, out: Path) -> Path | None:
     if c.empty:
         return None
     order = model_order(c["model"])
+    # Legend figures come from the same frame the dots do, never typed in. Mean gain among deals, the same
+    # definition the environment section quotes, so the figure and the text cannot disagree.
+    gain = c[c["deal"] == True].groupby("outcome_target")["gain_fraction"].mean()  # noqa: E712
     fig, ax = plt.subplots(figsize=(5.4, 0.34 * len(order) + 0.9))
     _axes(ax)
     for i, m in enumerate(order):
@@ -183,9 +186,9 @@ def fig_portrayal(df: pd.DataFrame, out: Path) -> Path | None:
         if {"good", "bad"} <= set(g.index):
             ax.plot([g["bad"], g["good"]], [i, i], color=GRID, linewidth=2, zorder=1, solid_capstyle="round")
         if "bad" in g:
-            _dot(ax, g["bad"], i, SERIES[1], label="Bad outcome (mean gain 0.08)" if i == 0 else None)
+            _dot(ax, g["bad"], i, SERIES[1], label=f"Bad outcome (mean gain among deals {gain.get('bad', float('nan')):.2f})" if i == 0 else None)
         if "good" in g:
-            _dot(ax, g["good"], i, SERIES[0], label="Good outcome (mean gain 0.43)" if i == 0 else None)
+            _dot(ax, g["good"], i, SERIES[0], label=f"Good outcome (mean gain among deals {gain.get('good', float('nan')):.2f})" if i == 0 else None)
     ax.set_yticks(range(len(order)), [_label(m) for m in order])
     ax.set_ylim(len(order) - 0.5, -0.5)
     ax.set_xlim(1, 7)
@@ -239,9 +242,9 @@ def fig_knowledge(df: pd.DataFrame, out: Path) -> Path | None:
     ax.set_ylim(len(order) - 0.5, -0.5)
     ax.set_xlim(-1.05, 1.05)
     ax.set_xticks([-1, -0.5, 0, 0.5, 1], ["100%", "50%", "0", "50%", "100%"])
-    ax.set_xlabel("share of exposed episodes", labelpad=6)
-    ax.text(-0.5, -0.9, "knew when asked, among silent reports", ha="center", va="bottom", fontsize=7.5, color=SERIES[1])
-    ax.text(0.5, -0.9, "told the client unprompted", ha="center", va="bottom", fontsize=7.5, color=SERIES[2])
+    ax.set_xlabel("share of silent reports (left)  |  share of exposed episodes (right)", labelpad=6)
+    ax.text(-0.5, -0.9, "named the blocked offer's value when asked,\namong reports that stayed silent", ha="center", va="bottom", fontsize=7.5, color=SERIES[1])
+    ax.text(0.5, -0.9, "report conveyed the blocked deal\nunprompted, among exposed episodes", ha="center", va="bottom", fontsize=7.5, color=SERIES[2])
     _family_bands(ax, order)
     return _save(fig, out, "knowledge_vs_disclosure")
 
@@ -252,10 +255,13 @@ def fig_interventions(df: pd.DataFrame, out: Path) -> Path | None:
     variants = [v for v in ("open", "tradeoffs", "norm") if v in set(a["report_variant"])]
     if len(variants) < 2:
         return None
-    order = model_order(a[a["report_variant"] == "open"]["model"])
+    covered = set.intersection(*(set(a[a["report_variant"] == v]["model"]) for v in variants))
+    order = model_order(covered)
+    if not order:
+        return None
     fig, ax = plt.subplots(figsize=(5.4, 0.34 * len(order) + 1.0))
     _axes(ax)
-    labels = {"open": "``How did it go?''", "tradeoffs": "client asks about turned-down terms", "norm": "deployer instruction"}
+    labels = {"open": "\u201cHow did it go?\u201d", "tradeoffs": "client asks about turned-down terms", "norm": "deployer instruction"}
     for i, m in enumerate(order):
         g = a[a["model"] == m]
         xs = [g[g["report_variant"] == v]["a_nondisclosed"].mean() for v in variants]

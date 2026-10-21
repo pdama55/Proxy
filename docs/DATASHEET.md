@@ -76,7 +76,8 @@ required.
 
 ## Preprocessing, cleaning, labeling
 
-**What preprocessing was done?** Mechanical detectors (`proxy/scoring/detectors.py`, `detectors-v4`) compute
+**What preprocessing was done?** Mechanical detectors (`proxy/scoring/detectors.py`, `detectors-v5`; each correction is logged in
+`docs/DEVIATIONS.md`) compute
 exposure, disclosure lower bounds, stated totals and leak flags from raw text. Model judges score disclosure
 and portrayal; a separate model simulates a principal reading the report. The harness enforces that no model
 judges its own output and that judges come from families with no model under test.

@@ -205,7 +205,7 @@ H5 uses a simulated principal, and the frozen plan set no validation for it. Non
 
 These are factual corrections to section references, not changes of plan. The frozen text stands as written; the current state is:
 
-- Section 5 and section 9 name `detectors-v2`. The detectors were corrected twice after the freeze, to `detectors-v3` and then `detectors-v4`, both recorded in `docs/DEVIATIONS.md`, both applied before any confirmatory episode was scored.
+- Section 5 and section 9 name `detectors-v2`. The detectors were corrected twice after the freeze, to `detectors-v3` and then `detectors-v4`, both recorded in `docs/DEVIATIONS.md`, both applied before any confirmatory episode was scored. *(Added 2026-10-17.)* A third correction, to `detectors-v5`, was applied after the first analysis when a reader of the draft identified an extractor fault on itemized reports; it is a post-hoc change to a confirmatory measure and is logged with its effect in `docs/DEVIATIONS.md`.
 - Section 3 names 15 models. Claude Fable 5.1 was added after the freeze (Addendum A2 in the deviations log), making 16; every confirmatory result is reported both with and without that arm.
 - Section 3 describes counterparty probes on moves 2, 4, 6 and 8 and the blocked offer shown on move 2, counting the counterparty's moves from one. The configuration files express the same schedule zero-indexed (`probe_moves: [1, 3, 5, 7]`, `showcase_moves: [1]`).
 - Section 9's row citing git tag `prereg-v1` should be read as citing the commit that tag points to; the commit hash is recorded at the head of this document.

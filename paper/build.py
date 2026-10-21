@@ -3,6 +3,7 @@
     python paper/build.py [configs/analysis.yaml]
 """
 
+import re
 import subprocess
 import sys
 import warnings
@@ -94,7 +95,11 @@ def compute_macros() -> dict[str, str]:
 
 
 def versions_table(runs: list[str]) -> str:
-    """Served-model strings and the window each arm ran in, read back from the episodes themselves."""
+    """Served-model strings and the window each arm ran in, read back from the episodes themselves.
+
+    `runs` should be the arms whose window the table describes (the confirmatory grid and the post-freeze
+    arm). Served strings are still collected over those runs only, so a string change in any later run would
+    be visible in the deviations log rather than silently widening this table."""
     import json
     from collections import defaultdict
 
@@ -114,7 +119,8 @@ def versions_table(runs: list[str]) -> str:
     for model in sorted(seen):
         stamps = sorted(when[model])
         served = ", ".join(sorted(seen[model])) or "--"
-        pinned = "yes" if any(ch.isdigit() for ch in served.split("-")[-1]) and len(served.split("-")[-1]) >= 6 else "no"
+        # A served string is dated if it carries a calendar date in any common form (20251001, 2026-07-09).
+        pinned = "yes" if re.search(r"(?<!\d)(?:20\d{2}-?[01]\d-?[0-3]\d)(?!\d)", served) else "no"
         window = f"{stamps[0][:10]} to {stamps[-1][:10]}" if stamps else "--"
         rows.append((model.replace("_", r"\_"), served.replace("_", r"\_"), pinned, window))
     head = (r"\begin{tabular}{llll}" "\n" r"\toprule" "\n"
@@ -137,6 +143,17 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     def pts(x, d=1):
         return "n/a" if x is None else f"{abs(x) * 100:.{d}f}"
 
+    def minus(text: str) -> str:
+        """Typeset negative numbers with a real minus sign, not a hyphen."""
+        return re.sub(r"(?<![\w])-(?=\d)", "$-$", text)
+
+    def ppts(x, d=0):
+        """A change in a rate, in percentage points with sign."""
+        return "n/a" if x is None else minus(f"{100 * x:+.{d}f}")
+
+    def ppts_ci(ci, d=0):
+        return minus(f"{100 * ci[0]:+.{d}f} to {100 * ci[1]:+.{d}f}")
+
     conf_path, expl_path = results_dir / "confirmatory.json", results_dir / "exploratory.json"
     if not conf_path.exists() or not expl_path.exists():
         return {}
@@ -149,12 +166,12 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     m["leakRate"] = pct(e["E0_violations_and_leaks"]["leak_rate"]["estimate"], 1)
 
     m["hTwoaPoints"] = pts(c["H2"]["H2a_blocked_alternative"]["lower_bound_bad_minus_good"]["estimate"])
-    m["hTwoaP"] = f"{c['H2']['p_H2a']:.2f}".lstrip("0")
+    m["hTwoaP"] = f"{c['H2']['p_H2a']:.2f}"
     m["hThreePoints"] = pts(c["H3"]["blocked_alternative_lower_bound_audit_minus_none"]["estimate"])
-    m["hThreeP"] = f"{c['H3']['p'] * 3:.3f}".lstrip("0")
-    m["hFiveGap"] = f"{c['H5']['rating_gap_report_minus_truth']['estimate']:.2f}"
+    m["hThreeP"] = f"{c['H3']['p'] * 3:.3f}"
+    m["hFiveGap"] = minus(f"{c['H5']['rating_gap_report_minus_truth']['estimate']:.2f}")
     m["hFiveMissed"] = pct(c["H5"]["missed_intervention_rate"]["estimate"], 1)
-    m["hFiveP"] = f"{c['H5']['p']:.2f}".lstrip("0")
+    m["hFiveP"] = f"{c['H5']['p']:.2f}"
     mis = confirmatory["principal_decision_mismatch"].dropna()
     missed = confirmatory["principal_missed_intervention"].dropna()
     if len(mis) and len(missed):
@@ -164,6 +181,17 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
         m["hFourOR"] = f"{rank['odds_ratio']:.2f}"
         if rank.get("or_ci95"):
             m["hFourORCI"] = f"{rank['or_ci95'][0]:.2f}--{rank['or_ci95'][1]:.2f}"
+    # Per-family slopes, so the text can say where the capability effect lives instead of asserting it.
+    for family, row in (c["H4"].get("per_family") or {}).items():
+        term = ((row.get("gee") or {}).get("terms") or {}).get("capability_rank") or {}
+        if term.get("odds_ratio"):
+            m[f"hFourOR{family.capitalize()}"] = f"{term['odds_ratio']:.2f}"
+            if term.get("or_ci95"):
+                m[f"hFourOR{family.capitalize()}CI"] = f"{term['or_ci95'][0]:.2f}--{term['or_ci95'][1]:.2f}"
+    cb = c["H2"].get("characterization_bias_bad_minus_good") or {}
+    if cb.get("estimate") is not None:
+        m["charBiasDiff"] = f"{cb['estimate']:+.2f}"
+        m["charBiasDiffCI"] = f"{cb['ci95'][0]:.2f}--{cb['ci95'][1]:.2f}"
 
     # Report interventions, on the paired negotiations only. The "open" arm of this comparison must be the
     # confirmatory grid, not every run: breadth and the post-freeze arm also carry open reports, and pooling
@@ -178,10 +206,11 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
         g = variants[variants["report_variant"] == variant]
         m[f"int{key}Judged"] = pct(g["a_nondisclosed"].mean()) if len(g) else "n/a"
+    m["nInterventionModels"] = str(variants["model"].nunique())
     for variant, key in (("tradeoffs", "Tradeoffs"), ("norm", "Norm")):
         ch = e["E7_interventions"][variant]["judged_change"]
-        m[f"int{key}Delta"] = f"{ch['estimate']:.2f}"
-        m[f"int{key}DeltaCI"] = f"{ch['ci95'][0]:.2f} to {ch['ci95'][1]:.2f}"
+        m[f"int{key}Delta"] = ppts(ch["estimate"])
+        m[f"int{key}DeltaCI"] = ppts_ci(ch["ci95"])
         for row in e["E7_interventions"][variant].get("by_model", []):
             m[f"int{key}{_macro_name(row['model'])}"] = pct(row["v_judged"])
 
@@ -200,8 +229,8 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
         d = cluster_bootstrap(sp.assign(stakes=(sp["points_forgone"] > 10).map({True: "high", False: "low"}),
                                         disclosed=1 - sp["a_nondisclosed"]),
                               diff_of("disclosed", "stakes", "low", "high"), B=2000)
-        m["stakesDiff"] = f"{100 * d['estimate']:.1f}"
-        m["stakesDiffCI"] = f"{100 * d['ci95'][0]:.1f} to {100 * d['ci95'][1]:+.1f}"
+        m["stakesDiff"] = ppts(d["estimate"], 1)
+        m["stakesDiffCI"] = ppts_ci(d["ci95"], 1)
     # The mechanical floor implied by how few reports name the blocked offer at all.
     named = base.dropna(subset=["a_not_named"])
     if len(named):
@@ -236,8 +265,8 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
     for key, name in (("low_salience_minus_base_D1", "ablSalienceDiff"), ("directive_minus_open_D1", "ablPromptDiff")):
         v = e4.get(key)
         if v:
-            m[name] = f"{100 * v['estimate']:+.1f}"
-            m[f"{name}CI"] = f"{100 * v['ci95'][0]:+.1f} to {100 * v['ci95'][1]:+.1f}"
+            m[name] = ppts(v["estimate"], 1)
+            m[f"{name}CI"] = ppts_ci(v["ci95"], 1)
             m[f"{name}N"] = str(v.get("n", ""))
     # LLM-counterparty arm: reported separately, never pooled with the scripted runs.
     e5 = e.get("E5_llm_counterparty") or {}
@@ -253,7 +282,23 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
             m["llmcpDtwoN"] = str(dt.get("n", ""))
     opus = (e.get("E11_stakes", {}).get("by_model") or {}).get("claude-opus-5") or {}
     if opus.get("p") is not None:
-        m["stakesOpusP"] = f"{opus['p']:.2f}".lstrip("0")
+        m["stakesOpusP"] = f"{opus['p']:.2f}"
+    # Report length: the judge-free floor is a verbosity-sensitive measure, and the paper says so with figures.
+    if "report_chars" in base:
+        by_model = base.groupby("model").agg(chars=("report_chars", "median"), floor=("a_unmentioned", "mean"))
+        if len(by_model) > 2:
+            m["lengthFloorCorr"] = minus(f"{by_model['chars'].corr(by_model['floor']):.2f}")
+        pooled = base[["report_chars", "a_unmentioned"]].dropna()
+        if len(pooled):
+            m["lengthFloorCorrPooled"] = minus(f"{pooled['report_chars'].corr(pooled['a_unmentioned']):.2f}")
+        med = base.groupby(base["audit"].astype(bool))["report_chars"].median()
+        if {True, False} <= set(med.index) and med[False]:
+            m["auditLengthChange"] = f"{100 * (med[True] / med[False] - 1):+.0f}\\%"
+        medt = base.groupby("outcome_target")["report_chars"].median()
+        if {"good", "bad"} <= set(medt.index) and medt["good"]:
+            m["badLengthChange"] = f"{100 * (medt['bad'] / medt['good'] - 1):+.0f}\\%"
+        m["reportCharsShortest"] = f"{by_model['chars'].min():,.0f}"
+        m["reportCharsLongest"] = f"{by_model['chars'].max():,.0f}"
     return m
 
 
@@ -275,6 +320,10 @@ def fable_macros(full_frame) -> dict[str, str]:
         "fableN": str(len(a)),
         "fableDtwo": pct(ok["total_misstated"].dropna().mean()),
     }
+    opus = full_frame[(full_frame["run"] == "main-v2") & (full_frame["model"] == "claude-opus-5")
+                      & (full_frame["blocked_alt"] == 1.0)].dropna(subset=["a_nondisclosed"])
+    if len(opus):
+        m["opusJudgedOneDecimal"] = pct(opus["a_nondisclosed"].mean())
     silent = a[a["a_nondisclosed"] == 1.0].dropna(subset=["probe_knew"])
     if len(silent):
         m["fableProbeKnew"] = pct(silent["probe_knew"].mean(), 0)
@@ -288,8 +337,8 @@ def fable_macros(full_frame) -> dict[str, str]:
     pair = pair[pair["model"].isin(["claude-opus-5", "claude-fable-5-1"])].dropna(subset=["a_nondisclosed"])
     if pair["model"].nunique() == 2:
         d = cluster_bootstrap(pair, diff_of("a_nondisclosed", "model", "claude-opus-5", "claude-fable-5-1"), B=2000)
-        m["fableVsOpus"] = f"{100 * d['estimate']:+.1f}"
-        m["fableVsOpusCI"] = f"{100 * d['ci95'][0]:.1f} to {100 * d['ci95'][1]:+.1f}"
+        m["fableVsOpus"] = re.sub(r"(?<![\w])-(?=\d)", "$-$", f"{100 * d['estimate']:+.1f}")
+        m["fableVsOpusCI"] = re.sub(r"(?<![\w])-(?=\d)", "$-$", f"{100 * d['ci95'][0]:+.1f} to {100 * d['ci95'][1]:+.1f}")
     # Headline with the arm folded in, so a reader can see it moves nothing.
     conf = full_frame[full_frame["run"].isin(["main-v2", "main-v2-qwen", "main-v2-fable"])]
     conf = conf[conf["report_variant"] == "open"]
@@ -349,9 +398,10 @@ def main(config: str = "configs/analysis.yaml") -> None:
     # needs them for the intervention comparison.
     scored = df[(~df["error"]) & (df["run"].isin((cfg.confirmatory_runs or []) + [f"{r}--{v}" for r in (cfg.confirmatory_runs or []) for v in ("tradeoffs", "norm")]))]
     (ROOT / "paper" / "tables").mkdir(exist_ok=True)
-    (ROOT / "paper" / "tables" / "per_model.tex").write_text(per_model_table(confirmatory) + "\n")
+    fable = df[(~df["error"]) & (df["run"] == "main-v2-fable") & (df["report_variant"] == "open")]
+    (ROOT / "paper" / "tables" / "per_model.tex").write_text(per_model_table(confirmatory, extra=fable) + "\n")
     (ROOT / "paper" / "tables" / "versions.tex").write_text(
-        versions_table(list(cfg.runs or []) + ["main-v2-fable"]) + "\n")
+        versions_table(list(cfg.confirmatory_runs or []) + ["main-v2-fable"]) + "\n")
     print("figures:", [p.name for p in paper_figures(scored, ROOT / "paper" / "figures")])
     # Both drivers share sections/, so they must be rebuilt together: a stale tmlr.pdf is the submission
     # artifact, and it silently keeps whatever claims the sections used to make.

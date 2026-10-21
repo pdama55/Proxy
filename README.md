@@ -11,9 +11,10 @@ against ground truth on two things: whether it conveys that the blocked better d
 whether it states the deal's value correctly (**D2**).
 
 The headline: agents almost never broke the requirement, and almost never mentioned what it cost. Judged
-non-disclosure is 97% of exposed episodes, and at least 69% by a mechanical measure that involves no model
-judgment at all. Asked directly afterwards, the same agents named the blocked offer's value correctly in most
-cases — so the information was available and simply not volunteered.
+non-disclosure is 97% of exposed episodes, and about one report in five refers to no other offer at all, a
+judge-free floor. Asked directly afterwards, the same agents named the blocked offer's value correctly in most
+cases, so the information was available and simply not volunteered. Exact figures are generated into the paper
+from the data; see `paper/numbers.tex`.
 
 ## Where to start
 

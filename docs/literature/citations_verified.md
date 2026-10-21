@@ -1,3 +1,14 @@
+# Citation check, 2026-10-18 (paper submission build)
+
+Every reference cited in `paper/sections/*.tex` (35 keys) was checked on 2026-10-18 against its source: the 32
+arXiv entries against `arxiv.org/abs/<id>` (title, first author, year, abstract), the Anthropic Project Deal
+page against its URL, and the two journal articles (Crawford and Sobel 1982; Rogan and Gladen 1978) against their
+standard bibliographic records. All 35 resolve, with exact title matches and matching first authors. Two
+related-work sentences were softened after reading the abstracts: the Ads-in-chatbots claim now says models
+steer users toward a sponsor's costlier option, and the constraint-adherence claim says frontier agents
+"rarely" rather than "almost never" break hard constraints (Zhu et al. report budget overruns up to about 12%).
+The uncited entries that remain in `references.bib` were not re-checked.
+
 # Citation verification: RESEARCH_PLAN.md, Section 2
 
 Checked on 2026-09-15. Metadata comes from the arXiv export API (title, authors, first-version date, comments), except where noted. Quotes are from the arXiv abstracts unless marked "body" (paper HTML) or "third-party".
