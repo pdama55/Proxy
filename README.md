@@ -26,6 +26,14 @@ from the data; see `paper/numbers.tex`.
 | `docs/DATASHEET.md` | Datasheet for the released episode corpus, including what it should *not* be used for. |
 | `docs/ANNOTATION_STUDY.md` | The human validation protocol. |
 
+## Data
+
+The episode corpus (9,104 episodes across every run, with scores, judge outputs, knowledge-probe exchanges,
+simulated-principal ratings and the per-annotator labels) is deposited on OSF next to the preregistration:
+https://doi.org/10.17605/OSF.IO/NAF6T. Download `proxy-episodes-v1.tar.gz` (72 MB; SHA-256 `3519b859a3908cb9e6ee10f770dbb184410100d8d37bd4bb6dc29a63b981f411`) and unpack it so that
+`data/runs/` and `data/annotations/` exist, then run `python -m proxy index`. `MANIFEST.json` in the archive
+lists a SHA-256 for every file. The archive is built by `scripts/package_release.py`.
+
 ## Reproducing
 
 Requires Python 3.14 and API credentials for the providers named in `configs/models.yaml` (Anthropic direct,

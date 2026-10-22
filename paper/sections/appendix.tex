@@ -89,13 +89,13 @@ reproduction cannot be guaranteed even against the same string, and we mark thos
 \label{app:artifacts}
 
 \paragraph{What is released.} \artifacturl\ contains the full harness (scenario generation, the scripted
-counterparty, the runner, every detector and judge prompt), the stored episodes with their transcripts and
-reports, the human annotation labels un-aggregated per annotator, the analysis code, and the sources for this
-paper. Every number, figure and table in the paper is generated from the stored episodes by a single command;
-none is transcribed by hand.
+counterparty, the runner, every detector and judge prompt), the analysis code, and the sources for this paper.
+\dataurl\ Every number, figure and table in the paper is generated from the stored episodes by a single
+command; none is transcribed by hand.
 
-\paragraph{Regenerating the results.} \reproducecmd\ Reproducing the episodes themselves requires
-provider credentials and does call models.
+\paragraph{Regenerating the results.} Unpack the corpus into \texttt{data/} and run \texttt{python -m proxy
+index}; then \reproducecmd\ Reproducing the episodes themselves requires provider credentials and does call
+models.
 
 \paragraph{Identifiers.} Each episode records the config hash, the prompt-template hash, the harness commit and
 the served-model string the provider returned. Those served strings, not the product names used in the text,

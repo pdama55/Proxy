@@ -114,7 +114,9 @@ intervention arms identify a prompt that moves non-disclosure from 97% to 27%.
 
 ## Distribution
 
-**How is it distributed?** With the paper, via the project repository and an archival deposit.
+**How is it distributed?** As `proxy-episodes-v1.tar.gz` (72 MB) on the Open Science Framework project that
+holds the preregistration, https://doi.org/10.17605/OSF.IO/NAF6T, with a SHA-256 manifest for every file. The harness and analysis code are
+in the GitHub repository; the corpus is not in git.
 
 **Licensing.** Code and annotations are the author's own work and are licensed accordingly (see `LICENSE`).
 Model-generated text is subject to the terms of the provider that generated it; those terms permit publication

@@ -29,6 +29,9 @@ identifiers:
   - type: url
     value: "https://osf.io/hb3f2"
     description: Preregistration (OSF Open-Ended Registration)
+  - type: doi
+    value: "10.17605/OSF.IO/NAF6T"
+    description: Episode corpus and annotation labels (OSF project, file proxy-episodes-v1.tar.gz)
 references:
   - type: data
     title: "Preregistration: Reporting Fidelity in Delegated LLM Negotiation"
