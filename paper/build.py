@@ -456,7 +456,7 @@ def main(config: str = "configs/analysis.yaml") -> None:
     # The reference-agent calibration is recomputed here (no model calls) so that no figure in the paper is typed.
     calibration = reference_calibration()
     write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration=calibration,
-                  extra={"nInterventionPairs": str(pairs), "calEpisodes": str(calibration["episodes"]),
+                  extra={"nInterventionPairs": f"{pairs:,}", "calEpisodes": str(calibration["episodes"]),
                          "calScenarios": str(calibration["scenarios"]), "calCurves": str(calibration["curves"]), **compute_macros(),
                          **stats_macros(df[~df["error"]], confirmatory, ROOT / "results" / "main-v2"),
                          **fable_macros(df[~df["error"]]), **agreement_macros(),
