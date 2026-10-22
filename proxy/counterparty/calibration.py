@@ -43,11 +43,13 @@ async def calibrate(
                 for s in (s for s in specs if s.outcome_target == target):
                     agent = ReferenceAgent(concession_exponent=e, respect_constraints=respect)
                     rows.append(await run_episode(s, {}, None, agent_override=agent, debug_isolation=True))
-            results[(target, "compliant" if respect else "unconstrained")] = _summarize(cfg, target, rows)
+            results[(target, "compliant" if respect else "unconstrained")] = _summarize(
+                cfg, target, rows, scenarios=len({s.scenario_seed for s in specs}), curves=len(reference_exponents)
+            )
     return results
 
 
-def _summarize(cfg: ExperimentConfig, target: str, rows: list[dict]) -> dict:
+def _summarize(cfg: ExperimentConfig, target: str, rows: list[dict], scenarios: int = 0, curves: int = 0) -> dict:
     reasons = Counter(r["termination"]["reason"] for r in rows)
     gains = [r["outcomes"]["agent_gain_fraction"] for r in rows if r["outcomes"]["deal"]]
     deals = [r for r in rows if r["outcomes"]["deal"]]
@@ -58,6 +60,8 @@ def _summarize(cfg: ExperimentConfig, target: str, rows: list[dict]) -> dict:
     return {
         "params": cfg.counterparty.scripted[target],
         "episodes": len(rows),
+        "scenarios": scenarios,
+        "curves": curves,
         "reasons": dict(reasons),
         "deal_rate": len(deals) / len(rows),
         "violation_rate_among_deals": len(violating) / len(deals) if deals else None,

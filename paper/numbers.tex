@@ -2,14 +2,14 @@
 \newcommand{\ablPhrasingPlain}{18.1\%}
 \newcommand{\ablPhrasingPolicy}{11.4\%}
 \newcommand{\ablPhrasingRequirement}{13.9\%}
-\newcommand{\ablPromptDiff}{$-$25.2}
-\newcommand{\ablPromptDiffCI}{$-$27.8 to $-$22.2}
+\newcommand{\ablPromptDiff}{−25.2}
+\newcommand{\ablPromptDiffCI}{−27.8 to −22.2}
 \newcommand{\ablPromptDiffN}{428}
 \newcommand{\ablPromptDirective}{1.9\%}
 \newcommand{\ablPromptOpen}{27.1\%}
 \newcommand{\ablSalienceBase}{16.3\%}
-\newcommand{\ablSalienceDiff}{$-$3.7}
-\newcommand{\ablSalienceDiffCI}{$-$8.3 to +2.9}
+\newcommand{\ablSalienceDiff}{−3.7}
+\newcommand{\ablSalienceDiffCI}{−8.3 to +2.9}
 \newcommand{\ablSalienceDiffN}{428}
 \newcommand{\ablSalienceLowsalience}{12.6\%}
 \newcommand{\auditLengthChange}{+10\%}
@@ -21,8 +21,11 @@
 \newcommand{\breadthGptSixAstra}{98\%}
 \newcommand{\breadthGrokFourSix}{100\%}
 \newcommand{\calBad}{0.09}
+\newcommand{\calCurves}{3}
+\newcommand{\calEpisodes}{138}
 \newcommand{\calGood}{0.44}
 \newcommand{\calMediocre}{0.24}
+\newcommand{\calScenarios}{23}
 \newcommand{\charBiasDiff}{+0.96}
 \newcommand{\charBiasDiffCI}{0.88--1.04}
 \newcommand{\computeCost}{665}
@@ -63,6 +66,7 @@
 \newcommand{\doneJudgedOneDecQwenthreeFiveThreefivebAthreeb}{98.9\%}
 \newcommand{\doneJudgedOneDecQwenthreeFiveThreeninesevenbAonesevenb}{98.9\%}
 \newcommand{\doneJudgedOneDecQwenthreeFiveTwosevenb}{100.0\%}
+\newcommand{\doneJudgedOthersRange}{98--100\%}
 \newcommand{\doneJudgedQwenthreeFiveNineb}{99\%}
 \newcommand{\doneJudgedQwenthreeFiveOnetwotwobAonezerob}{100\%}
 \newcommand{\doneJudgedQwenthreeFiveThreefivebAthreeb}{99\%}
@@ -117,6 +121,7 @@
 \newcommand{\doneToldGrokFourSix}{2.1\%}
 \newcommand{\doneToldLlamaFourMaverick}{1.3\%}
 \newcommand{\doneToldMistralLargeThree}{0.0\%}
+\newcommand{\doneToldOthersMax}{2.1\%}
 \newcommand{\doneToldQwenthreeFiveNineb}{1.1\%}
 \newcommand{\doneToldQwenthreeFiveOnetwotwobAonezerob}{0.0\%}
 \newcommand{\doneToldQwenthreeFiveThreefivebAthreeb}{1.1\%}
@@ -139,6 +144,7 @@
 \newcommand{\dtwoNQwenthreeFiveThreefivebAthreeb}{76}
 \newcommand{\dtwoNQwenthreeFiveThreeninesevenbAonesevenb}{80}
 \newcommand{\dtwoNQwenthreeFiveTwosevenb}{33}
+\newcommand{\dtwoOthersMax}{2\%}
 \newcommand{\dtwoSignedDiff}{+0.9}
 \newcommand{\dtwoStatedRate}{91.6\%}
 \newcommand{\dtwoWrongAll}{10.7\%}
@@ -166,8 +172,8 @@
 \newcommand{\fableN}{235}
 \newcommand{\fableProbeKnew}{98\%}
 \newcommand{\fableVsOpus}{+0.3}
-\newcommand{\fableVsOpusCI}{$-$6.3 to +7.1}
-\newcommand{\hFiveGap}{$-$0.69}
+\newcommand{\fableVsOpusCI}{−6.3 to +7.1}
+\newcommand{\hFiveGap}{−0.69}
 \newcommand{\hFiveMissed}{3.8\%}
 \newcommand{\hFiveP}{1.00}
 \newcommand{\hFourOR}{0.45}
@@ -182,34 +188,50 @@
 \newcommand{\hThreePoints}{2.7}
 \newcommand{\hTwoaP}{0.99}
 \newcommand{\hTwoaPoints}{2.9}
+\newcommand{\intNormAboveEighty}{4}
+\newcommand{\intNormAboveHalf}{6}
+\newcommand{\intNormAboveHalfList}{Mistral Large 3 (64\%), DeepSeek V4 Pro (79\%), Claude Sonnet 5 (86\%), GPT-5.6 Luna (87\%), Llama 4 Maverick (93\%) and Claude Haiku 4.5 (98\%)}
+\newcommand{\intNormBelowHalf}{4}
+\newcommand{\intNormBelowTen}{3}
 \newcommand{\intNormClaudeHaikuFourFive}{98\%}
 \newcommand{\intNormClaudeOpusFive}{6\%}
 \newcommand{\intNormClaudeSonnetFive}{86\%}
 \newcommand{\intNormDeepseekVfourProAzure}{79\%}
-\newcommand{\intNormDelta}{$-$42}
-\newcommand{\intNormDeltaCI}{$-$44 to $-$40}
+\newcommand{\intNormDelta}{−42}
+\newcommand{\intNormDeltaCI}{−44 to −40}
 \newcommand{\intNormGptFiveSixLuna}{87\%}
 \newcommand{\intNormGptFiveSixSol}{38\%}
 \newcommand{\intNormGptSixAstra}{0\%}
 \newcommand{\intNormGrokFourSix}{2\%}
+\newcommand{\intNormHalfToEighty}{2}
 \newcommand{\intNormJudged}{55\%}
 \newcommand{\intNormLlamaFourMaverick}{93\%}
 \newcommand{\intNormMistralLargeThree}{64\%}
+\newcommand{\intNormWorst}{98\%}
+\newcommand{\intNormWorstModel}{Claude Haiku 4.5}
 \newcommand{\intOpenJudged}{97\%}
+\newcommand{\intTradeoffsAboveEighty}{1}
+\newcommand{\intTradeoffsAboveHalf}{2}
+\newcommand{\intTradeoffsAboveHalfList}{DeepSeek V4 Pro (55\%) and Claude Haiku 4.5 (92\%)}
+\newcommand{\intTradeoffsBelowHalf}{8}
+\newcommand{\intTradeoffsBelowTen}{5}
 \newcommand{\intTradeoffsBestRange}{0--4\%}
 \newcommand{\intTradeoffsClaudeHaikuFourFive}{92\%}
 \newcommand{\intTradeoffsClaudeOpusFive}{3\%}
 \newcommand{\intTradeoffsClaudeSonnetFive}{29\%}
 \newcommand{\intTradeoffsDeepseekVfourProAzure}{55\%}
-\newcommand{\intTradeoffsDelta}{$-$70}
-\newcommand{\intTradeoffsDeltaCI}{$-$71 to $-$69}
+\newcommand{\intTradeoffsDelta}{−70}
+\newcommand{\intTradeoffsDeltaCI}{−71 to −69}
 \newcommand{\intTradeoffsGptFiveSixLuna}{4\%}
 \newcommand{\intTradeoffsGptFiveSixSol}{0\%}
 \newcommand{\intTradeoffsGptSixAstra}{0\%}
 \newcommand{\intTradeoffsGrokFourSix}{1\%}
+\newcommand{\intTradeoffsHalfToEighty}{1}
 \newcommand{\intTradeoffsJudged}{27\%}
 \newcommand{\intTradeoffsLlamaFourMaverick}{43\%}
 \newcommand{\intTradeoffsMistralLargeThree}{44\%}
+\newcommand{\intTradeoffsWorst}{92\%}
+\newcommand{\intTradeoffsWorstModel}{Claude Haiku 4.5}
 \newcommand{\kappaHuman}{0.94}
 \newcommand{\kappaHumanFourWay}{0.38}
 \newcommand{\kappaHumanFourWayRaw}{52\%}
@@ -222,8 +244,8 @@
 \newcommand{\kappaJudgeSecondRaw}{95\%}
 \newcommand{\leakCount}{5}
 \newcommand{\leakRate}{0.2\%}
-\newcommand{\lengthFloorCorr}{$-$0.58}
-\newcommand{\lengthFloorCorrPooled}{$-$0.40}
+\newcommand{\lengthFloorCorr}{−0.58}
+\newcommand{\lengthFloorCorrPooled}{−0.40}
 \newcommand{\llmcpDtwo}{0.0\%}
 \newcommand{\llmcpDtwoN}{48}
 \newcommand{\llmcpEpisodes}{78}
@@ -295,8 +317,8 @@
 \newcommand{\shadowShareAboveTen}{38\%}
 \newcommand{\stageOneN}{16}
 \newcommand{\stageOnePrecision}{1.00}
-\newcommand{\stakesDiff}{$-$0.1}
-\newcommand{\stakesDiffCI}{$-$2.2 to +1.6}
+\newcommand{\stakesDiff}{−0.1}
+\newcommand{\stakesDiffCI}{−2.2 to +1.6}
 \newcommand{\stakesHighDisclosed}{2.8\%}
 \newcommand{\stakesLowDisclosed}{2.9\%}
 \newcommand{\stakesOpusP}{0.67}

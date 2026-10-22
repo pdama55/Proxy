@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from proxy.analysis.data import load_frame  # noqa: E402
-from proxy.analysis.paper_figures import paper_figures  # noqa: E402
-from proxy.analysis.paper_numbers import _macro_name, per_model_table, write_numbers  # noqa: E402
+from proxy.analysis.paper_figures import DISPLAY, paper_figures  # noqa: E402
+from proxy.analysis.paper_numbers import _macro_name, per_model_table, reference_calibration, write_numbers  # noqa: E402
 from proxy.analysis.report import AnalysisConfig  # noqa: E402
 from proxy.config import load_models  # noqa: E402
 from proxy.store import EpisodeStore  # noqa: E402
@@ -144,8 +144,10 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
         return "n/a" if x is None else f"{abs(x) * 100:.{d}f}"
 
     def minus(text: str) -> str:
-        """Typeset negative numbers with a real minus sign, not a hyphen."""
-        return re.sub(r"(?<![\w])-(?=\d)", "$-$", text)
+        """Typeset negative numbers with a real minus sign (U+2212) as a text character. Every driver sets its
+        fonts through fontspec, so the character is typeset directly; a math-mode minus would leave the glyph's
+        meaning to the extractor, which is what garbled it for one reader."""
+        return re.sub(r"(?<![\w])-(?=\d)", "\u2212", text)
 
     def ppts(x, d=0):
         """A change in a rate, in percentage points with sign."""
@@ -211,8 +213,22 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
         ch = e["E7_interventions"][variant]["judged_change"]
         m[f"int{key}Delta"] = ppts(ch["estimate"])
         m[f"int{key}DeltaCI"] = ppts_ci(ch["ci95"])
-        for row in e["E7_interventions"][variant].get("by_model", []):
+        rows = e["E7_interventions"][variant].get("by_model", [])
+        for row in rows:
             m[f"int{key}{_macro_name(row['model'])}"] = pct(row["v_judged"])
+        # How the models divide under the prompt, so the text can count rather than say "half" or "all".
+        vals = {row["model"]: row["v_judged"] for row in rows}
+        if vals:
+            m[f"int{key}BelowTen"] = str(sum(v <= 0.10 for v in vals.values()))
+            m[f"int{key}BelowHalf"] = str(sum(v <= 0.50 for v in vals.values()))
+            m[f"int{key}HalfToEighty"] = str(sum(0.50 < v < 0.80 for v in vals.values()))
+            m[f"int{key}AboveEighty"] = str(sum(v >= 0.80 for v in vals.values()))
+            worst = max(vals, key=vals.get)
+            m[f"int{key}WorstModel"] = DISPLAY.get(worst, (worst,))[0]
+            m[f"int{key}Worst"] = pct(vals[worst])
+            above = [f"{DISPLAY.get(k, (k,))[0]} ({pct(v)})" for k, v in sorted(vals.items(), key=lambda kv: kv[1]) if v > 0.50]
+            m[f"int{key}AboveHalfList"] = " and ".join([", ".join(above[:-1]), above[-1]]) if len(above) > 1 else (above[0] if above else "none")
+            m[f"int{key}AboveHalf"] = str(len(above))
 
     for model, row in (e.get("E10_breadth", {}).get("by_model") or {}).items():
         judged = (row or {}).get("judged") or {}
@@ -248,6 +264,18 @@ def stats_macros(full_frame, confirmatory, results_dir: Path) -> dict[str, str]:
           if r["model"] in ("gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6")]
     if tr:
         m["intTradeoffsBestRange"] = f"{100 * min(tr):.0f}--{100 * max(tr):.0f}\\%"
+    # Judged non-disclosure and conveyance for every model other than Claude Opus 5, so the "one developer" claim
+    # in the abstract and introduction is checkable against the grid.
+    others = base[base["model"] != "claude-opus-5"]
+    if len(others):
+        by = others.groupby("model")["a_nondisclosed"].mean()
+        m["doneJudgedOthersRange"] = f"{100 * by.min():.0f}--{100 * by.max():.0f}\\%"
+        m["doneToldOthersMax"] = pct(1 - by.min(), 1)
+    # D2 misstatement outside the three models that carry the errors.
+    three = ["claude-haiku-4-5", "deepseek-v4-pro-azure", "mistral-large-3"]
+    rest = confirmatory[~confirmatory["model"].isin(three)].dropna(subset=["total_misstated"])
+    if len(rest):
+        m["dtwoOthersMax"] = pct(rest.groupby("model")["total_misstated"].mean().max())
     # D2 error range among the frontier models, so the "concentrated in weaker models" claim is checkable.
     frontier = ["claude-opus-5", "claude-sonnet-5", "gpt-6-astra", "gpt-5.6-sol", "gpt-5.6-luna", "grok-4.6"]
     fr = confirmatory[confirmatory["model"].isin(frontier)].dropna(subset=["total_misstated"])
@@ -337,8 +365,8 @@ def fable_macros(full_frame) -> dict[str, str]:
     pair = pair[pair["model"].isin(["claude-opus-5", "claude-fable-5-1"])].dropna(subset=["a_nondisclosed"])
     if pair["model"].nunique() == 2:
         d = cluster_bootstrap(pair, diff_of("a_nondisclosed", "model", "claude-opus-5", "claude-fable-5-1"), B=2000)
-        m["fableVsOpus"] = re.sub(r"(?<![\w])-(?=\d)", "$-$", f"{100 * d['estimate']:+.1f}")
-        m["fableVsOpusCI"] = re.sub(r"(?<![\w])-(?=\d)", "$-$", f"{100 * d['ci95'][0]:+.1f} to {100 * d['ci95'][1]:+.1f}")
+        m["fableVsOpus"] = re.sub(r"(?<![\w])-(?=\d)", "\u2212", f"{100 * d['estimate']:+.1f}")
+        m["fableVsOpusCI"] = re.sub(r"(?<![\w])-(?=\d)", "\u2212", f"{100 * d['ci95'][0]:+.1f} to {100 * d['ci95'][1]:+.1f}")
     # Headline with the arm folded in, so a reader can see it moves nothing.
     conf = full_frame[full_frame["run"].isin(["main-v2", "main-v2-qwen", "main-v2-fable"])]
     conf = conf[conf["report_variant"] == "open"]
@@ -379,6 +407,42 @@ def agreement_macros() -> dict[str, str]:
     if sp.get("precision") is not None:
         m["stageOnePrecision"] = f"{sp['precision']:.2f}"
         m["stageOneN"] = str(sp["n"])
+    m.update(secondary_agreement_macros())
+    return m
+
+
+def secondary_agreement_macros() -> dict[str, str]:
+    """Portrayal (characterization) and leak validation from batch-c, once it has been labelled.
+
+    Empty until `proxy annotate agreement data/annotations/batch-c` has written agreement.json, so the build
+    never fails for want of labels; the paper's text for these measures is added when the macros exist."""
+    import json
+
+    path = ROOT / "data" / "annotations" / "batch-c" / "agreement.json"
+    if not path.exists():
+        return {}
+    rep = json.loads(path.read_text())
+    m: dict[str, str] = {}
+    ch = rep["types"].get("characterization") or {}
+    pair = next(iter(ch.get("human_vs_human", {}).values()), None)
+    if pair and pair.get("n"):
+        m["kappaCharHuman"] = f"{pair['kappa']:.2f}"
+        m["kappaCharHumanN"] = str(pair["n"])
+        if pair.get("spearman") is not None:
+            m["spearmanCharHuman"] = f"{pair['spearman']:.2f}"
+    for judge, st in ch.get("vs_consensus", {}).items():
+        if st.get("n"):
+            tag = "Primary" if "kimi" in judge else "Second"
+            m[f"kappaCharJudge{tag}"] = f"{st['kappa']:.2f}"
+            m[f"kappaCharJudge{tag}N"] = str(st["n"])
+            m[f"charDemote{tag}"] = "yes" if st.get("demote") else "no"
+    m["charConsensusN"] = str(ch.get("consensus_items", 0))
+    lk = rep["types"].get("leak") or {}
+    det = (lk.get("detector_vs_consensus") or {}).get("exact") or {}
+    if det:
+        for k in ("tp", "fp", "fn", "tn"):
+            m[f"leakDet{k.upper()}"] = str(det[k])
+        m["leakItemsN"] = str(lk.get("consensus_items", 0))
     return m
 
 
@@ -389,8 +453,11 @@ def main(config: str = "configs/analysis.yaml") -> None:
     confirmatory = confirmatory[~confirmatory["error"]]
     variants = df[(~df["error"]) & (df["report_variant"] != "open") & (df["blocked_alt"] == 1.0)]
     pairs = int(variants[variants["report_variant"] == "tradeoffs"]["base_episode"].nunique())
-    write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration={"good": 0.44, "mediocre": 0.24, "bad": 0.09},
-                  extra={"nInterventionPairs": str(pairs), **compute_macros(),
+    # The reference-agent calibration is recomputed here (no model calls) so that no figure in the paper is typed.
+    calibration = reference_calibration()
+    write_numbers(confirmatory, ROOT / "paper" / "numbers.tex", calibration=calibration,
+                  extra={"nInterventionPairs": str(pairs), "calEpisodes": str(calibration["episodes"]),
+                         "calScenarios": str(calibration["scenarios"]), "calCurves": str(calibration["curves"]), **compute_macros(),
                          **stats_macros(df[~df["error"]], confirmatory, ROOT / "results" / "main-v2"),
                          **fable_macros(df[~df["error"]]), **agreement_macros(),
                          **debias_macros(confirmatory, cfg)})

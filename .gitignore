@@ -32,3 +32,6 @@ paper/tmlr.pdf
 paper/*.aux
 paper/*.bbl
 paper/*.blg
+
+# Archival deposit tarballs (scripts/package_release.py)
+/release

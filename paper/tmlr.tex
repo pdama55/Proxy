@@ -7,6 +7,14 @@
 \documentclass{article}
 \usepackage{tmlr}
 
+% Latin Modern as OpenType via fontspec rather than the Type 1 fonts tmlr.sty loads: same design, but the
+% ToUnicode maps decompose ligatures, so copy, search and screen readers get "office" rather than "o\ufb03ce".
+\usepackage{fontspec}
+% Ligatures=NoCommon: f-ligatures are typeset as separate letters, so the PDF carries no ligature glyph at all and
+% every extractor, however naive, reads "office" and "figure".
+\setmainfont{lmroman10-regular.otf}[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,BoldItalicFont=lmroman10-bolditalic.otf,Ligatures=NoCommon]
+\setsansfont{lmsans10-regular.otf}[BoldFont=lmsans10-bold.otf,ItalicFont=lmsans10-oblique.otf,Ligatures=NoCommon]
+\setmonofont{lmmono10-regular.otf}
 \usepackage{amsmath}
 \usepackage{microtype}
 \usepackage{booktabs,tabularx,multirow}

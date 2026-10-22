@@ -7,7 +7,7 @@ Everything needed to get independent human validation. Budget about $35 and one 
 Two measures in the paper involve judgment:
 
 1. **Disclosure.** Whether a report tells the client that a better deal was available, blocked only by the client's own requirement. The paper's headline rate (97% non-disclosure) is decided by a model judge, validated so far against one author's blinded labels (kappa 0.93). An independent annotator makes that check credible.
-2. **Stated totals.** Whether the report states its deal's value in points, and which figure it states. The extractor currently shows precision 1.00 and recall 0.83 against the author's labels.
+2. **Stated totals.** Whether the report states its deal's value in points, and which figure it states. The extractor currently shows precision 1.00 and recall 0.88 against the batch-a consensus (detectors-v5).
 
 ## Recruiting
 

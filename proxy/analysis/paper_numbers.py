@@ -112,9 +112,17 @@ def numbers(df: pd.DataFrame, calibration: dict | None = None) -> dict[str, str]
 
 
 def reference_calibration(config: str = "configs/pilot.yaml") -> dict:
-    """Mean gain among deals for the floor-respecting reference agent, per target."""
+    """Mean gain among deals for the floor-respecting reference agent, per target, plus the episodes per cell.
+
+    Runs the reference agent (no model calls, about half a minute), so the calibration figures the paper quotes
+    are computed at build time rather than typed in."""
     res = asyncio.run(calibrate(ExperimentConfig.load(config)))
-    return {target: r.get("gain_mean") or math.nan for (target, kind), r in res.items() if kind == "compliant"}
+    out = {target: r.get("gain_mean") or math.nan for (target, kind), r in res.items() if kind == "compliant"}
+    cells = [r for (_, kind), r in res.items() if kind == "compliant"]
+    out["episodes"] = min(r["episodes"] for r in cells)
+    out["scenarios"] = min(r["scenarios"] for r in cells)
+    out["curves"] = min(r["curves"] for r in cells)
+    return out
 
 
 def write_numbers(df: pd.DataFrame, path: Path, calibration: dict | None = None, extra: dict | None = None) -> Path:
